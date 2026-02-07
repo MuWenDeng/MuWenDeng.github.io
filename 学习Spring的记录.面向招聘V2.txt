@@ -1,0 +1,212 @@
+简历：
+使用 Spring Boot 开发 REST API，
+实现基于 JWT 的登录鉴权，
+通过 AOP 处理事务与日志
+
+
+【能力要求】：
+1、Java基础扎实，理解IO、多线程、集合等基础架构，熟悉JVM原理，熟悉常用的Java开源框架，对使用过的框架能了解到原理和机制，熟悉springboot，springcloud等常用开源框架；
+2、了解互联网系统的架构，2年以上的高可用、分布式大型系统架构和开发经验，丰富的线上运维经验，熟悉缓存、消息等机制，熟悉开源中间件的使用，了解其原理和机制。
+3、有高并发、高可用性系统设计与开发的经验，有性能调优的经验，掌握多线程及高性能的设计与编码及性能调优；有高并发应用开发经验。
+4、对数据抽象、领域建模等有相关的工作经验，有大数据处理及算法经验者优先。（Hadoop/Spark/Flink/Kafka等大数据与流处理技术）
+5、掌握Linux 操作系统和大型数据库（Oracle、MySql）、对sql优化有丰富的经验。
+6、具备良好的设计通用框架及模块的能力。具备良好的系统分析能力、抽象能力，擅长分析复杂问题和解决问题。
+
+
+
+根据上面的要求，总结如下：
+1. Spring Boot启动流程
+从SpringApplication.run()开始的关键步骤（加载配置、创建上下文、刷新上下文等）。
+
+内嵌Web服务器（如Tomcat）的启动过程。
+
+2. 请求参数处理
+@RequestParam、@RequestBody、@Valid校验参数
+
+全局异常处理（@ControllerAdvice和@ExceptionHandler）。
+@ControllerAdvice：全局异常处理和全局数据绑定的注解。
+@ExceptionHandler(异常类.class)，处理指定类型的异常。
+
+3. 拦截器（Interceptor）与过滤器（Filter）对比
+
+维度	过滤器（Filter）	拦截器（Interceptor）
+所属规范	Servlet规范（javax.servlet）	Spring MVC框架（org.springframework.web.servlet）
+作用范围	所有Web资源（Servlet、JSP、静态资源）	只针对Spring MVC管理的控制器（Controller）
+依赖	不依赖Spring框架，可在任何Java Web应用中使用	依赖Spring MVC框架
+执行时机	在请求进入Servlet之前，响应离开Servlet之后	在DispatcherServlet处理请求前后
+获取Spring Bean	无法直接注入Spring Bean（需通过其他方式）	可直接使用Spring依赖注入
+
+执行流程：
+HTTP Request → Tomcat → Filter Chain → DispatcherServlet → Interceptor Chain → Controller
+           ↓                                                      ↓
+HTTP Response ← Tomcat ← Filter Chain ← DispatcherServlet ← Interceptor Chain ← Controller
+
+DispatcherServlet负责：将接收到的HTTP请求，发给相应的控制器处理
+
+1) Filter：IP黑白名单 → 字符编码设置 → CORS处理
+2) Interceptor：登录验证 → 权限校验 → 接口日志
+3) AOP：业务层日志 → 事务管理 → 性能监控
+
+
+常见面试问题
+1）过滤器和拦截器的执行顺序是怎样的？
+
+过滤器在DispatcherServlet之前执行，拦截器在DispatcherServlet之后执行
+
+多个过滤器按注册顺序执行，多个拦截器按配置顺序执行
+
+2）过滤器中可以注入Spring Bean吗？
+
+直接使用@Autowired无效，需要通过WebApplicationContextUtils获取
+
+或使用Spring的DelegatingFilterProxy
+
+3）什么情况下拦截器的postHandle方法不会执行？
+
+preHandle返回false时
+
+Controller抛出异常且未被@ControllerAdvice捕获时
+
+4）如何全局捕获Controller异常？
+
+使用@ControllerAdvice + @ExceptionHandler（在拦截器之后执行）
+
+无法在过滤器中捕获Controller异常
+
+5）如何处理静态资源？
+
+过滤器可以处理所有静态资源
+
+拦截器默认不处理静态资源，需通过配置排除
+
+
+4. Spring Data JPA
+4.1 关联关系注解
+一对一（One-to-One）
+
+@Entity
+public class User {
+    @Id
+    private Long id;
+    
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;  // 用户拥有一个地址
+}
+
+@Entity
+public class Address {
+    @Id
+    private Long id;
+    
+    @OneToOne(mappedBy = "address")
+    private User user;  // 地址被一个用户拥有
+}
+
+
+一对多（One-to-Many）
+@Entity
+public class Department {
+    @Id
+    private Long id;
+    
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Employee> employees = new ArrayList<>();
+    // mappedBy表示关系由Employee类的department属性维护
+}
+
+@Entity
+public class Employee {
+    @Id
+    private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dept_id")
+    private Department department;  // 外键维护方
+}
+
+
+一对多（One-to-Many）
+@Entity
+public class Department {
+    @Id
+    private Long id;
+    
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Employee> employees = new ArrayList<>();
+    // mappedBy表示关系由Employee类的department属性维护
+}
+
+@Entity
+public class Employee {
+    @Id
+    private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dept_id")
+    private Department department;  // 外键维护方
+}
+
+4.2 方法命名规则查询
+findBy/readBy/queryBy/getBy/countBy/deleteBy + 属性 + 条件
+
+// 1. 简单条件查询
+User findByUsername(String username);
+List<User> findByEmail(String email);
+User findByUsernameAndEmail(String username, String email);
+
+// 2. 比较查询
+List<User> findByAgeGreaterThan(int age);
+List<User> findByAgeLessThanEqual(int age);  // 小于等于
+List<User> findByAgeBetween(int min, int max);
+List<User> findByAgeNotBetween(int start, int end);  // 不在区间内
+List<User> findByAgeIn(Collection<Integer> ages);
+List<User> findByAgeNotIn(Collection<Integer> ages);
+List<User> findByCreateTimeAfter(Date date);       // 创建时间晚于指定时间
+List<User> findByCreateTimeBefore(Date date);      // 创建时间早于指定时间
+
+// 3. 模糊查询
+List<User> findByUsernameContaining(String keyword);
+List<User> findByUsernameLike(String pattern);  // %keyword%
+List<User> findByUsernameStartingWith(String prefix);
+List<User> findByUsernameEndingWith(String suffix);
+
+// 4. 排序查询
+List<User> findByAgeOrderByCreateTimeDesc(int age);
+List<User> findByStatusOrderByUsernameAscCreateTimeDesc(UserStatus status);
+
+// 5. 统计查询
+long countByStatus(UserStatus status);
+boolean existsByEmail(String email);
+int deleteByStatus(UserStatus status);
+
+// 6. 关联查询
+List<User> findByDepartmentName(String deptName);
+List<User> findByDepartment_Id(Long deptId);  // 使用下划线访问关联对象属性
+
+// 空值检查
+List<User> findByEmailIsNull();      // email为NULL
+List<User> findByEmailIsNotNull();   // email不为NULL
+
+// 结合其他条件
+List<User> findByEmailIsNotNullAndStatus(UserStatus status);
+
+4.3 @Query注解查询
+JPQL查询（面向实体）
+
+    @Query("SELECT u FROM User u WHERE u.username = :name OR u.email = :email")
+    User findByNameOrEmail(@Param("name") String username, @Param("email") String email);
+
+
+原生SQL查询：
+    @Query(value = "SELECT * FROM users u WHERE u.age > :age", nativeQuery = true)
+    List<User> findUsersOlderThan(@Param("age") int age);
+
+
+5. 事务管理
+
+@Transactional的工作原理及传播行为（Propagation）、隔离级别（Isolation）。
+
+声明式事务与编程式事务的区别。
+
+

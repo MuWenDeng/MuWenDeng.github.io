@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring 学习笔记 - Java 知识库</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: #f5f7fa;
+            border-bottom: 2px solid #e1e4e8;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 1rem 2rem;
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .tab:hover {
+            background: rgba(102, 126, 234, 0.05);
+            color: #667eea;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            background: white;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+        }
+        
+        /* Content Area */
+        .tab-panel {
+            display: none;
+        }
+        
+        .tab-panel.active {
+            display: flex;
+        }
+        
+        .layout {
+            display: flex;
+            min-height: 70vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e1e4e8;
+            overflow-y: auto;
+            height: calc(100vh - 180px);
+        }
+        
+        .sidebar-title {
+            padding: 1.2rem 1rem;
+            background: white;
+            border-bottom: 2px solid #e1e4e8;
+            font-weight: 700;
+            color: #667eea;
+            font-size: 0.95rem;
+        }
+        
+        .toc-tree {
+            padding: 1rem 0;
+        }
+        
+        .toc-link {
+            display: block;
+            padding: 0.5rem 1rem;
+            color: #555;
+            text-decoration: none;
+            font-size: 0.88rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .toc-link:hover {
+            background: rgba(102, 126, 234, 0.08);
+            color: #667eea;
+            border-left-color: #667eea;
+        }
+        
+        .toc-link.level-1 {
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .toc-num {
+            color: #667eea;
+            font-weight: 600;
+            margin-right: 0.4rem;
+        }
+        
+        .toc-text {
+            word-break: break-word;
+        }
+        
+        /* Main Content */
+        .main {
+            flex: 1;
+            padding: 2.5rem 3rem;
+            overflow-y: auto;
+            height: calc(100vh - 180px);
+        }
+        
+        .heading {
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e8e8e8;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .heading.level-1 {
+            font-size: 1.8rem;
+            color: #667eea;
+            border-bottom-width: 3px;
+        }
+        
+        .heading.level-2 {
+            font-size: 1.4rem;
+        }
+        
+        .heading.level-3 {
+            font-size: 1.2rem;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .main p {
+            margin: 0.6rem 0;
+            line-height: 1.8;
+        }
+        
+        .main .gap {
+            height: 0.8rem;
+        }
+        
+        .main pre {
+            background: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            line-height: 1.5;
+        }
+        
+        .main code {
+            font-family: "SF Mono", Monaco, Consolas, "Courier New", monospace;
+            font-size: 0.9em;
+            color: #24292e;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+            
+            .main {
+                padding: 2rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .layout {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+                position: static;
+            }
+            
+            .main {
+                padding: 1.5rem;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .tab {
+                padding: 0.8rem 1rem;
+                font-size: 0.95rem;
+            }
+        }
+        
+        /* Scrollbar Style */
+        .main::-webkit-scrollbar,
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .main::-webkit-scrollbar-track,
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .main::-webkit-scrollbar-thumb,
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        .main::-webkit-scrollbar-thumb:hover,
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Spring 学习笔记</h1>
+            <p>Java 核心知识 · Spring 框架精讲 · 面试必备</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">📚 基础篇</button>
+            <button class="tab" onclick="switchTab(1)">💼 面向招聘</button>
+        </div>
+        
+        <!-- 基础篇 -->
+        <div class="tab-panel active">
+            <div class="layout">
+                <aside class="sidebar">
+                    <div class="sidebar-title">📑 目录导航</div>
+                    <div class="toc-tree">
+        <a href="#h-1" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">1</span>
+            <span class="toc-text">掌握 Java 核心知识</span>
+        </a>
+        <a href="#h-2" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">2</span>
+            <span class="toc-text">学习 Spring Core 和 DI/AOP 概念</span>
+        </a>
+        <a href="#h-3" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">3</span>
+            <span class="toc-text">实践 Spring MVC 开发 Web 应用</span>
+        </a>
+        <a href="#h-4" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">4</span>
+            <span class="toc-text">学习 Spring Data 进行数据库操作</span>
+        </a>
+        <a href="#h-5" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">5</span>
+            <span class="toc-text">掌握 Spring Boot 简化开发流程</span>
+        </a>
+        <a href="#h-6" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">6</span>
+            <span class="toc-text">探索 Spring Cloud 构建微服务</span>
+        </a></div>
+                </aside>
+                <main class="main">
+                    <h2 id="h-1" class="heading level-1">1. 掌握 Java 核心知识</h2>
+<p>1.1 IoC 控制反转：一种设计思想/原则。</p>
+<p>核心：对象不创建依赖，而是依赖由“外部容器”提供。</p>
+<div class="gap"></div>
+<p>DI 依赖注入：是实现IoC的主要技术手段。Spring使用DI来实现IoC。</p>
+<div class="gap"></div>
+<pre><code>class UserService {
+    private UserRepository repo;
+
+    public UserService(UserRepository repo) {
+        this.repo = repo;
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>然后由 Spring 来做这件事：</p>
+<pre><code>@Bean</code></pre>
+<pre><code>public UserService userService(UserRepository repo) {
+    return new UserService(repo);
+}</code></pre>
+<div class="gap"></div>
+<p>1.2 面向切面编程(AOP, Aspect Oriented Programming)：支持横切关注点的模块化</p>
+<p>Spring AOP = 在不改业务代码的情况下，给方法“外挂”一段逻辑</p>
+<div class="gap"></div>
+<p>比如：</p>
+<p>打日志</p>
+<p>统计耗时</p>
+<p>权限校验</p>
+<p>事务控制</p>
+<div class="gap"></div>
+<pre><code>@Around 是最强的 Advice，事务、重试、缓存，必须用 @Around。</code></pre>
+<div class="gap"></div>
+<p>1.3 volatile 修饰符</p>
+<pre><code>public class MyRunnable implements Runnable
+{
+    private volatile boolean active;
+    public void run()
+    {
+        active = true;
+        while (active) // 第一行
+        {
+            // 代码
+        }
+    }
+    public void stop()
+    {
+        active = false; // 第二行
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>多线程：</p>
+<p>run() 在一个线程里跑</p>
+<p>stop() 在另一个线程里调用</p>
+<div class="gap"></div>
+<p>多线程同享同一个变量 active。这是 Java 内存模型（JMM） 的能力。</p>
+<div class="gap"></div>
+<p>如果没有volatile，JVM会把 active 缓存在CPU寄存器里，导致while永远读不到false。volatile保证不缓存，每次从主内存读。</p>
+<div class="gap"></div>
+<p>PHP默认是单线程模型，所以没有这个问题。</p>
+<div class="gap"></div>
+<p>1.4 synchronized 修饰符</p>
+<p>synchronized 关键字声明的方法同一时间只能被一个线程访问。</p>
+<div class="gap"></div>
+<p>保证了原子性，通过 “互斥锁” 机制，确保同一时刻只有一个线程能进入同步代码块或方法。原子性的意思是不可分割了，读→改→写 三步是一个整体，都要执行完了才释放锁。</p>
+<div class="gap"></div>
+<p>实例</p>
+<pre><code>class Account {
+    private int balance = 100;
+
+    public synchronized void draw(int amount) {
+        if (balance &gt; amount) {
+            System.out.println(&quot;正在取钱&quot;);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {}
+            balance -= amount;
+            System.out.println(&quot;取完钱，余额为：&quot; + balance);
+        } else {
+            System.out.println(&quot;余额不足，余额为：&quot; + balance);
+        }
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>// 测试多线程</p>
+<pre><code>class TestSynchronized {
+    public static void main(String[] args) {
+        Account account = new Account();
+
+        Runnable r1 = new Runnable() {
+            @Override
+            public void run() {
+                account.draw(80);
+            }
+        };
+
+        Thread t1 = new Thread(r1);
+        Thread t2 = new Thread(r1);
+
+        t1.start();
+        t2.start();
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>线程安全的输出：</p>
+<p>正在取钱</p>
+<p>取完钱，余额为：20</p>
+<p>余额不足，余额为：20</p>
+<div class="gap"></div>
+<p>如果去掉 synchronized，则可能输出：</p>
+<p>正在取钱</p>
+<p>正在取钱</p>
+<p>取完钱，余额为：-60</p>
+<p>取完钱，余额为：-60</p>
+<div class="gap"></div>
+<p>正在取钱</p>
+<p>正在取钱</p>
+<p>取完钱，余额为：20</p>
+<p>取完钱，余额为：20</p>
+<div class="gap"></div>
+<p>代码分析：synchronized 已经保证了balance互斥 + 可见性。所以不需要加上volatile。</p>
+<p>当线程退出 synchronized 方法/块时，会把对共享变量的修改 刷新到主内存。</p>
+<p>当其他线程进入 synchronized 方法/块时，会 重新从主内存读取最新值。</p>
+<div class="gap"></div>
+<p>1.5 transient 修饰符</p>
+<p>transient 修饰的成员变量，在对象序列化时会被忽略，不会写入字节流。例如密码不需要显示出来，那序列化时，就不显示。</p>
+<div class="gap"></div>
+<p>1.6 </p>
+<p>String s1 = &quot;Runoob&quot;; 使用字符串常量池</p>
+<p>String s4 = new String(&quot;Runoob&quot;); 在堆里新建对象。先检查常量池，这一步同s1，然后在堆里创建一个String对象，里面又有一个&quot;Runoob&quot;。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>System.out.println(s1 == s4); // false</p>
+<p>System.out.println(s1.equals(s4)); // true</p>
+<div class="gap"></div>
+<p>一般不使用new String()，多占内存、性能差。</p>
+<div class="gap"></div>
+<p>原因：</p>
+<p>== 比的是 引用地址</p>
+<p>equals() 比的是 内容</p>
+<div class="gap"></div>
+<p>1.7</p>
+<p>| 内存区域                              | 存储内容                                   |</p>
+<p>| --------------------------------- | -------------------------------------- |</p>
+<p>| **堆（Heap）**                       | `new` 创建的对象、对象里的成员变量、数组、**字符串常量池（String Pool）** |</p>
+<p>| **栈（Stack）**                      | 局部变量、方法参数、**基本类型值**、对象引用，例如boolean b = true; b 和 true 都在 栈               |</p>
+<p>| **运行时常量池（Runtime Constant Pool）** | 编译期常量、符号引用（类/方法/字段的元数据引用）              |</p>
+<p>| **元空间（Metaspace）**                | 类元数据、方法信息、**静态变量（static 字段）**          |</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>大例子：</p>
+<pre><code>public class MemoryExample {
+
+    // ------------------- 元空间 -------------------
+    // 静态字段，存储在元空间
+    public static int staticCounter = 0;
+
+    // 编译期常量，存储在元空间 + 运行时常量池
+    public static final double PI = 3.14159;
+    public static final String GREETING = &quot;Hello, JVM!&quot;;
+
+    // ------------------- 对象字段（堆） -------------------
+    private int instanceValue;            // 普通对象字段 → 堆
+    private volatile boolean flag;        // volatile 对象字段 → 堆
+    private String instanceString;        // 对象字段引用 → 堆（引用在堆，指向 String Pool 或堆）
+
+    public MemoryExample(String str) {
+        this.instanceValue = 42;
+        this.flag = true;
+        this.instanceString = str; // 可以指向常量池里的字符串
+    }
+
+    public void runExample() {
+        // ------------------- 栈 -------------------
+        int localVar = 10;                // 栈
+        boolean localFlag = false;        // 栈
+        String localString = &quot;Local String&quot;; // 栈里引用，指向常量池或堆
+
+        MemoryExample localObj = new MemoryExample(&quot;Instance String&quot;); 
+        // localObj 引用在栈，MyExample 对象在堆
+    }
+
+    public static void main(String[] args) {
+        // 栈
+        MemoryExample example = new MemoryExample(GREETING); // example 引用在栈，对象在堆
+        example.runExample();
+    }
+}</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>堆(Heap)：</p>
+<p>Person p = new Person();</p>
+<p>int[] arr = new int[]{1, 2, 3};</p>
+<p>String s = &quot;hello&quot;; // &quot;hello&quot; 在 String Pool（堆中）</p>
+<div class="gap"></div>
+<p>栈（Stack）：</p>
+<pre><code>void test() {
+    int a = 1;          // a 和 1 在栈
+    boolean b = true;   // b 和 true 在栈
+    Person p = new Person(); // p 在栈，指向堆。p里的成员变量都在对象p所在的堆里。
+}</code></pre>
+<div class="gap"></div>
+<p>运行时常量池（Runtime Constant Pool）</p>
+<pre><code>public class A {
+    static final int X = 10; // 10 的常量信息
+    void foo() {}
+}</code></pre>
+<p>// A、foo、X 等符号引用存在运行时常量池</p>
+<div class="gap"></div>
+<p>元空间（Metaspace）：</p>
+<pre><code>class User {
+    static int count = 0; // count 存在元空间
+    void login() {}
+}</code></pre>
+<p>// User 的类结构、方法表都在 Metaspace</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>| 内存区域                              | 会不会被 GC？ | 原因 / 说明                                                                       |</p>
+<p>| --------------------------------- | -------- | ----------------------------------------------------------------------------- |</p>
+<p>| **堆（Heap）**                       | ✅ 会      | 堆是垃圾回收的主要战场。**所有 `new` 出来的对象**，数组，以及字符串常量池对象（String Pool）都在堆里，**无引用时 GC 回收**。 |</p>
+<p>| **栈（Stack）**                      | ❌ 不会     | 栈是方法调用的临时空间，局部变量、方法参数、基本类型值、对象引用都在栈中，**栈帧出栈时自动释放**，无需 GC。                     |</p>
+<p>| **运行时常量池（Runtime Constant Pool）** | ✅ 部分可回收  | 运行时常量池在 **类元数据里**，属于堆的一部分。常量池中的**符号引用或字面量常量**如果**没有被任何引用使用**，可以被 GC 回收。       |</p>
+<p>| **元空间（Metaspace）**                | ✅ 部分可回收  | 元空间存储类元数据和静态变量。**类被卸载时**，对应元空间内存会被回收；静态变量只要类还在，就不会被回收。                        |</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>1）“在Java应用中，堆内存通常比栈内存大1-2个数量级”</p>
+<p>因为堆存储所有对象，栈只存储基本类型和引用</p>
+<div class="gap"></div>
+<p>2）“栈内存是线程私有的，总栈内存 = 线程数 × 栈大小”</p>
+<p>线程过多时，栈内存可能很大</p>
+<div class="gap"></div>
+<p>3）“堆内存是全局共享的，存储所有对象实例”</p>
+<p>业务数据、缓存都在堆中</p>
+<div class="gap"></div>
+<p>4）“调优时优先关注堆内存，栈内存通常不是瓶颈”</p>
+<p>除非有深度递归或大量线程</p>
+<div class="gap"></div>
+<p>5）“栈溢出容易发现（StackOverflowError），堆溢出更常见（OOM）”</p>
+<p>生产环境更多处理堆内存问题</p>
+<div class="gap"></div>
+<p>记住这个结论：在绝大多数Java应用中，堆内存远大于栈内存。栈内存通常只占总内存的很小一部分（&lt;10%），除非应用创建了大量线程或使用了深度递归。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>1.8 String / StringBuilder / StringBuffer</p>
+<p>| 类型            | 适用场景       | 注意         |</p>
+<p>| ------------- | ---------- | ---------- |</p>
+<p>| String        | 少量拼接、不频繁修改 | 易读、简单      |</p>
+<p>| StringBuilder | 循环拼接、动态修改  | 非线程安全，性能高  |</p>
+<p>| StringBuffer  | 多线程拼接      | 同步开销大，性能稍低 |</p>
+<div class="gap"></div>
+<p>口诀：</p>
+<p>少量拼接用 String，大量动态拼接用 StringBuilder；多线程共享用 StringBuffer</p>
+<div class="gap"></div>
+<p>为什么 StringBuilder 线程不安全？</p>
+<p>StringBuilder 的方法（如 append、insert）没有加 synchronized</p>
+<p>如果多个线程同时修改同一个 StringBuilder 对象，会出现 数据竞态（race condition）</p>
+<p>例如拼接错乱、字符丢失、数组越界</p>
+<div class="gap"></div>
+<p>StringBuffer 是线程安全的：它的关键方法都加了 synchronized</p>
+<div class="gap"></div>
+<p>1.9 </p>
+<p>数组： int[] array = new int[5]; 固定大小</p>
+<p>列表：List&lt;String&gt; arrayList = new ArrayList&lt;&gt;(); 动态数组，可变大小。</p>
+<p>集合（Sets）：Set&lt;String&gt; hashSet = new HashSet&lt;&gt;(); 用于存储不重复的元素</p>
+<div class="gap"></div>
+<p>HashMap：</p>
+<p>HashMap&lt;Integer, String&gt; employeeMap = new HashMap&lt;&gt;();</p>
+<div class="gap"></div>
+<p>// 放入数据（put方法）</p>
+<p>employeeMap.put(1001, &quot;张三&quot;);</p>
+<p>employeeMap.put(1002, &quot;李四&quot;);</p>
+<p>employeeMap.put(1003, &quot;王五&quot;);</p>
+<p>employeeMap.put(1004, &quot;赵六&quot;);</p>
+<div class="gap"></div>
+<p>1.10</p>
+<div class="gap"></div>
+<p>使用线程池和原子操作，例如多人抢票系统。</p>
+<div class="gap"></div>
+<pre><code>import java.util.concurrent.*;</code></pre>
+<pre><code>import java.util.concurrent.atomic.AtomicInteger;</code></pre>
+<div class="gap"></div>
+<p>/**</p>
+<p> * 高级版 - 使用线程池和原子操作</p>
+<p> * 更高效、更专业的多线程实现</p>
+<p> */</p>
+<pre><code>public class ConcertTicketSystem {
+    // 剩余票数（使用原子整数，保证原子性）
+    private AtomicInteger remainingTickets = new AtomicInteger(100);
+    
+    // 成功抢到票的用户列表（线程安全的集合）
+    private ConcurrentLinkedQueue&lt;String&gt; successBuyers = new ConcurrentLinkedQueue&lt;&gt;();
+    
+    // 卖票方法 - 使用原子操作
+    public boolean tryBuyTicket(String buyerName) {
+        // 使用原子操作的CAS（Compare and Swap）机制
+        while (true) {
+            int current = remainingTickets.get();
+            if (current &lt;= 0) {
+                return false; // 票已售罄
+            }
+            
+            // CAS操作：如果当前值仍是current，则减1
+            if (remainingTickets.compareAndSet(current, current - 1)) {
+                successBuyers.offer(buyerName); // 记录成功用户
+                
+                // 模拟业务处理时间
+                try {
+                    Thread.sleep(ThreadLocalRandom.current().nextInt(5, 15));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                
+                System.out.printf(&quot;[%s] %s 成功抢到票，剩余票数: %d%n&quot;,
+                        Thread.currentThread().getName(),
+                        buyerName,
+                        current - 1);
+                return true;
+            }
+            // 如果CAS失败，说明被其他线程修改了，重试
+        }
+    }
+    
+    public static void main(String[] args) throws InterruptedException {
+        ConcertTicketSystem ticketSystem = new ConcertTicketSystem();
+        
+        System.out.println(&quot;🎵 热门演唱会门票开售！ 🎵&quot;);
+        System.out.println(&quot;总票数: 100 张&quot;);
+        System.out.println(&quot;抢票人数: 1000 人&quot;);
+        System.out.println(&quot;=&quot;.repeat(50));
+        
+        // 创建线程池（最佳实践：不要直接new Thread）
+        int coreCount = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(coreCount * 2);
+        
+        // 使用CountDownLatch控制并发
+        CountDownLatch latch = new CountDownLatch(1000);
+        
+        // 记录开始时间
+        long startTime = System.currentTimeMillis();
+        
+        // 提交1000个抢票任务
+        for (int i = 1; i &lt;= 1000; i++) {
+            final int userId = i;
+            executor.submit(() -&gt; {
+                try {
+                    String buyerName = &quot;用户&quot; + userId;
+                    ticketSystem.tryBuyTicket(buyerName);
+                } finally {
+                    latch.countDown(); // 任务完成
+                }
+            });
+        }
+        
+        // 等待所有任务完成
+        latch.await();
+        
+        // 关闭线程池
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+        
+        long endTime = System.currentTimeMillis();
+        
+        // 打印统计结果
+        System.out.println(&quot;\n&quot; + &quot;=&quot;.repeat(50));
+        System.out.println(&quot;🎉 抢票统计结果 🎉&quot;);
+        System.out.println(&quot;总耗时: &quot; + (endTime - startTime) + &quot;ms&quot;);
+        System.out.println(&quot;成功抢到票的用户数: &quot; + ticketSystem.successBuyers.size());
+        System.out.println(&quot;剩余票数: &quot; + ticketSystem.remainingTickets.get());
+        
+        // 显示前10个抢到票的用户
+        System.out.println(&quot;\n🏆 前10位抢到票的用户:&quot;);
+        int count = 0;
+        for (String buyer : ticketSystem.successBuyers) {
+            if (count++ &lt; 10) {
+                System.out.println(&quot;  &quot; + buyer);
+            } else {
+                break;
+            }
+        }
+    }
+}</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<h2 id="h-2" class="heading level-1">2. 学习 Spring Core 和 DI/AOP 概念</h2>
+<p>❓ 为什么不用 new？</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>方面	使用 new	使用 Spring DI	优势</p>
+<p>创建控制	自己控制	容器控制	✅ 解耦</p>
+<p>依赖管理	手动管理	自动管理	✅ 简单</p>
+<p>单例模式	自己实现	自动单例	✅ 统一</p>
+<p>循环依赖	难处理	自动检测	✅ 安全</p>
+<p>测试	需要Mock	轻松注入Mock	✅ 可测试</p>
+<p>配置变更	改代码	改配置	✅ 灵活</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>启动时间 vs 运行时间</p>
+<p>使用 new：</p>
+<p>✅ 启动快：直接创建</p>
+<p>❌ 运行慢：每次都要创建和连接</p>
+<div class="gap"></div>
+<p>使用 Spring DI：</p>
+<p>❌ 启动慢：需要扫描、分析、创建所有Bean</p>
+<p>✅ 运行快：Bean是单例，复用已创建的对象</p>
+<div class="gap"></div>
+<p>对于长期运行的服务（如Web服务器）：</p>
+<p>启动时间影响不大，运行效率更重要！</p>
+<div class="gap"></div>
+<p>❓ 对象是谁创建的？</p>
+<p>对象是由 Spring IoC（控制反转）容器创建的。</p>
+<div class="gap"></div>
+<p>❓ Spring 容器是什么？</p>
+<p>Spring容器（IoC容器）是Spring框架的核心引擎，它的正式名称是 ApplicationContext（应用上下文）。</p>
+<div class="gap"></div>
+<p>创建并管理所有由它托管的Java对象（这些对象被称为 Bean）。</p>
+<p>记住：在 Spring 的世界里，几乎一切对象都是 Bean！</p>
+<div class="gap"></div>
+<p>本质一句话：</p>
+<p>Spring 帮你管理对象的创建、依赖关系和生命周期</p>
+<div class="gap"></div>
+<h2 id="h-3" class="heading level-1">3. 实践 Spring MVC 开发 Web 应用</h2>
+<p>3.1 要学习 Java 1.8（Java 8）+ Spring Boot 2.7.6，官方已经不推荐了。所以要手动在 https://start.aliyun.com/ 进行下载 Srping Boot 2.7.6。</p>
+<div class="gap"></div>
+<p>① 加 JPA + MySQL 依赖</p>
+<p>② 配置数据源</p>
+<p>③ 写 UserEntity</p>
+<p>④ 写 UserRepository</p>
+<p>⑤ 写 UserService</p>
+<p>⑥ Controller 调接口</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<h2 id="h-4" class="heading level-1">4. 学习 Spring Data 进行数据库操作</h2>
+<div class="gap"></div>
+<h2 id="h-5" class="heading level-1">5. 掌握 Spring Boot 简化开发流程</h2>
+<p>Spring Boot 是 Spring 框架的扩展，旨在简化 Spring 应用的初始搭建和开发过程。</p>
+<div class="gap"></div>
+<p>Spring Boot 主要特性：</p>
+<div class="gap"></div>
+<p>自动配置：根据类路径中的 jar 包自动配置 Spring 应用</p>
+<p>起步依赖：简化依赖管理</p>
+<p>内嵌服务器：无需部署 WAR 文件</p>
+<p>Actuator：提供生产级监控功能</p>
+<div class="gap"></div>
+<h2 id="h-6" class="heading level-1">6. 探索 Spring Cloud 构建微服务</h2>
+<div class="gap"></div>
+<p>-------------------------------</p>
+<p>-------------------------------</p>
+<p>-------------------------------</p>
+<p>-------------------------------</p>
+<p>-------------------------------</p>
+<p>-------------------------------</p>
+<p>7. 练手</p>
+<p>跳槽用最小项目（必做）</p>
+<div class="gap"></div>
+<p>❗ 不做项目 = 很难说服面试官</p>
+<div class="gap"></div>
+<p>项目目标（一句话）</p>
+<div class="gap"></div>
+<p>一个带 JWT 登录的 Spring Boot API 服务</p>
+<div class="gap"></div>
+<p>项目功能（刚刚好，不多）</p>
+<p>POST   /api/auth/login</p>
+<p>GET    /api/users</p>
+<p>GET    /api/users/{id}</p>
+<p>POST   /api/users</p>
+<p>PUT    /api/users/{id}</p>
+<p>DELETE /api/users/{id}</p>
+<div class="gap"></div>
+<p>技术点（全是面试点）</p>
+<div class="gap"></div>
+<p>Java 17</p>
+<p>1）Sealed Classes（密封类）：限制哪些类可以集成，增强代码安全性和可维护性</p>
+<p>2）Records（记录类）：自动生成构造函数、getter，类似 Lombok @Data。解决样板代码多的问题。</p>
+<p>3）Switch表达式：解决Switch语句冗长</p>
+<p>4）Text Blocks（文本块）- JEP 378</p>
+<p>java</p>
+<p>// 面试问题：Text Blocks 解决了什么问题？</p>
+<p>// 旧方式：多行字符串拼接丑</p>
+<p>String json = &quot;{\n&quot; +</p>
+<pre><code>              &quot;  \&quot;name\&quot;: \&quot;张三\&quot;,\n&quot; +
+              &quot;  \&quot;age\&quot;: 25\n&quot; +
+              &quot;}&quot;;</code></pre>
+<p>// Java 17 方式：三引号文本块</p>
+<p>String json = &quot;&quot;&quot;</p>
+<pre><code>    {
+      &quot;name&quot;: &quot;张三&quot;,
+      &quot;age&quot;: 25
+    }</code></pre>
+<pre><code>    &quot;&quot;&quot;;</code></pre>
+<p>Spring Boot</p>
+<div class="gap"></div>
+<p>Spring Data JPA 或 MyBatis</p>
+<div class="gap"></div>
+<p>JWT（拦截器实现）</p>
+<div class="gap"></div>
+<p>AOP 日志</p>
+<p>Spring Boot 2 最常用的日志方案，最常用组合：SLF4J + Logback，另外再加上Lombok 依赖/注解</p>
+<div class="gap"></div>
+<p>SLF4J (Simple Logging Facade for Java)</p>
+<div class="gap"></div>
+<p>概念	类比	说明</p>
+<p>SLF4J	Java 的 JDBC 接口	定义了一组标准接口，但不实现</p>
+<p>Logback	MySQL JDBC 驱动	具体的实现，真正干活的部分</p>
+<p>关系	USB 接口 vs USB 设备	SLF4J 是接口规范，Logback 是具体设备</p>
+<div class="gap"></div>
+<p>另外可以加上添加 Lombok 依赖（最常用）</p>
+<p>&lt;!-- Lombok：注解自动生成代码，如@Getter、@Setter、@Slf4j、@Builder --&gt;</p>
+<p>&lt;dependency&gt;</p>
+<pre><code>    &lt;groupId&gt;org.projectlombok&lt;/groupId&gt;
+    &lt;artifactId&gt;lombok&lt;/artifactId&gt;
+    &lt;version&gt;1.18.30&lt;/version&gt; &lt;!-- 使用最新稳定版 --&gt;
+    &lt;scope&gt;provided&lt;/scope&gt;</code></pre>
+<p>&lt;/dependency&gt;</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>------------------------------</p>
+<p>------------------------------</p>
+<p>Controller的切面例子，用来记录request和response、耗时：</p>
+<div class="gap"></div>
+<pre><code>package com.muwen.demoapi.web.aspect;</code></pre>
+<div class="gap"></div>
+<pre><code>import com.fasterxml.jackson.core.JsonProcessingException;</code></pre>
+<pre><code>import com.fasterxml.jackson.databind.ObjectMapper;</code></pre>
+<pre><code>import lombok.extern.slf4j.Slf4j;</code></pre>
+<pre><code>import org.aspectj.lang.JoinPoint;</code></pre>
+<pre><code>import org.aspectj.lang.ProceedingJoinPoint;</code></pre>
+<pre><code>import org.aspectj.lang.annotation.*;</code></pre>
+<pre><code>import org.springframework.stereotype.Component;</code></pre>
+<div class="gap"></div>
+<pre><code>@Slf4j // 相当于 private static final Logger log = LoggerFactory.getLogger(WebLogAspect.class);</code></pre>
+<pre><code>@Aspect // 告诉 Spring 这是一个切面类，包含切入点（Pointcut）和通知（Advice）。没有 @Aspect，则@Pointcut、@Before、@Around 等注解无效</code></pre>
+<pre><code>@Component // 让 Spring 扫描到该类并注册为 Bean，让 Spring 容器创建和管理该类的实例</code></pre>
+<pre><code>public class WebLogAspect {
+    private final ObjectMapper objectMapper;
+
+    public WebLogAspect(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @Pointcut(&quot;execution(public * com.muwen.demoapi.web.controller..*(..))&quot;)
+    public void webLogPointcut() {}
+
+    /**
+     * 前置通知：在目标方法执行前执行
+     *
+     * @param joinPoint 切点
+     */
+    @Before(&quot;webLogPointcut()&quot;)
+    public void doBefore(JoinPoint joinPoint) {
+        String methodName = joinPoint.getSignature().toShortString();
+        Object[] args = joinPoint.getArgs();
+        log.info(&quot;请求方法: {}, 参数: {}&quot;, methodName, args);
+    }
+
+    /**
+     * 环绕通知：环绕目标方法执行
+     *
+     * @param proceedingJoinPoint 切点
+     * @return 目标方法的返回值
+     * @throws Throwable 如果目标方法抛出异常
+     */
+    @Around(&quot;webLogPointcut()&quot;)
+    public Object doAround(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        long startTime = System.currentTimeMillis();
+
+        Object result = proceedingJoinPoint.proceed();
+
+        // 输出执行时间
+        log.info(&quot;Time Consuming: {} ms&quot;, System.currentTimeMillis() - startTime);
+
+        return result;
+    }
+
+    /**
+     * 后置通知：在目标方法执行后执行
+     *
+     * @param result 目标方法的返回值
+     */
+    @AfterReturning(pointcut = &quot;webLogPointcut()&quot;, returning = &quot;result&quot;)
+    public void doAfterReturning(Object result) {
+        try {
+            String responseBody = objectMapper.writeValueAsString(result);
+            log.info(&quot;响应结果: {}&quot;, responseBody);
+        } catch (JsonProcessingException e) {
+            log.warn(&quot;响应结果序列化失败&quot;, e);
+            log.info(&quot;响应结果: {}&quot;, result);
+        }
+    }
+
+
+}</code></pre>
+<div class="gap"></div>
+<p>------------------------------</p>
+<p>------------------------------</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>事务</p>
+<div class="gap"></div>
+<p>Docker（加分）</p>
+<div class="gap"></div>
+<p>👉 这个项目 = 面试弹药库</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>中国 Java 面试高频八股（只背这些）</p>
+<p>🔥 必会</p>
+<div class="gap"></div>
+<p>Spring IoC / DI</p>
+<div class="gap"></div>
+<p>AOP 原理</p>
+<p>一句话概括：Spring AOP 是基于动态代理实现的，用于将横切关注点（如日志、事务）模块化，并以非侵入方式织入到目标方法的框架。</p>
+<div class="gap"></div>
+<p>1）Spring AOP 和 AspectJ 有什么区别？</p>
+<p>Spring AOP 是运行时动态代理，仅支持方法级别的织入。</p>
+<p>AspectJ 是编译时/类加载织入，功能更强大（可织入字段、构造器等），但更复杂。</p>
+<div class="gap"></div>
+<p>Spring AOP是AspectJ的一个功能子集。</p>
+<div class="gap"></div>
+<p>2）通知的顺序：</p>
+<pre><code>@Around 开始（proceed() 之前的部分）</code></pre>
+<pre><code>@Before</code></pre>
+<p>proceed()目标方法执行</p>
+<pre><code>@Around 继续（proceed() 之后的部分）</code></pre>
+<pre><code>@AfterReturning（成功）或 @AfterThrowing（异常）</code></pre>
+<pre><code>@After（最终通知，类似 finally）</code></pre>
+<div class="gap"></div>
+<p>3）Spring AOP 默认使用哪种动态代理？在什么情况下会使用 CGLIB？</p>
+<p>默认情况下，如果目标类实现了至少一个接口，Spring AOP 使用 JDK 动态代理（基于 InvocationHandler）；如果目标类没有实现接口，则使用 CGLIB 生成子类代理。在 Spring Boot 2.x 后，可以通过 spring.aop.proxy-target-class=true 强制使用 CGLIB。</p>
+<div class="gap"></div>
+<p>JDK动态代理基于接口，利用反射机制；CGLIB基于继承，通过字节码生成子类。</p>
+<div class="gap"></div>
+<p>4）如何实现一个自定义的注解，并利用 AOP 使其生效？</p>
+<p>定义注解 @MyLog。</p>
+<p>创建切面类，用 @Aspect 和 @Component 标注。</p>
+<p>在通知注解（如 @Around）中，使用 @annotation(myLog) 绑定自定义注解。</p>
+<p>在通知方法中编写增强逻辑。</p>
+<div class="gap"></div>
+<p>5）在微服务中，AOP 可以应用于哪些场景？</p>
+<p>全局异常处理：@ControllerAdvice 本身就是 AOP 思想的体现。</p>
+<p>分布式链路追踪：在切面中向请求头注入或提取 TraceId。</p>
+<p>接口限流与熔断：通过自定义注解和 AOP 统一实现。</p>
+<p>Feign 客户端增强：统一添加认证头、记录日志。</p>
+<div class="gap"></div>
+<p>6）AOP 对性能有影响吗？如何优化？</p>
+<p>影响：动态代理会带来微小的性能开销（方法调用转发）。</p>
+<div class="gap"></div>
+<p>优化：精确切入点表达式（避免过于宽泛的 execution(* com..*.*(..))），在非必要的地方避免使用 AOP，对于性能极度敏感的场景可以考虑 AspectJ 编译时织入。</p>
+<div class="gap"></div>
+<p>7）你在项目中是如何使用 AOP 解决实际问题的？</p>
+<p>我在XX项目中，利用自定义注解 @OperationLog 和 AOP 实现了操作日志的统一记录。切面会拦截所有带该注解的方法，自动将操作人、时间、参数和结果异步存入数据库。这使业务代码非常干净，并且便于后续的审计和排查问题。</p>
+<pre><code></code></pre>
+<pre><code>@Transactional 失效场景</code></pre>
+<p>1）方法访问权限问题</p>
+<pre><code>    // ✅ 正确：public方法
+    @Transactional
+    public void createUserPublic(User user) {
+        userRepository.save(user);
+    }</code></pre>
+<p>2）自调用问题</p>
+<pre><code>@Service</code></pre>
+<pre><code>public class OrderService {
+    
+    public void createOrder(Order order) {
+        // ❌ 错误：直接调用同类中的事务方法
+        this.updateInventory(order);  // 事务失效！
+        orderRepository.save(order);
+    }
+    
+    @Transactional
+    public void updateInventory(Order order) {
+        inventoryService.reduce(order.getProductId(), order.getQuantity());
+    }
+}</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>解决方案：</p>
+<pre><code>@Service</code></pre>
+<pre><code>public class OrderService {
+    
+    // ✅ 方案1：注入自身代理
+    @Autowired
+    private OrderService self;  // Spring会注入代理对象
+    
+    public void createOrder(Order order) {
+        self.updateInventory(order);  // ✅ 通过代理调用
+        orderRepository.save(order);
+    }
+    
+    @Transactional
+    public void updateInventory(Order order) {
+        inventoryService.reduce(order.getProductId(), order.getQuantity());
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>你注入的不是“自己”，而是“自己的代理”。</p>
+<p>AOP（事务）的逻辑是由代理对象执行的。</p>
+<div class="gap"></div>
+<p>3）异常类型捕获问题</p>
+<pre><code>@Service</code></pre>
+<pre><code>public class PaymentService {
+    
+    @Transactional
+    public void processPayment(Payment payment) {
+        try {
+            paymentRepository.save(payment);
+            throw new RuntimeException(&quot;业务异常&quot;);
+        } catch (Exception e) {
+            // ❌ 捕获了异常，事务不会回滚
+            log.error(&quot;支付失败&quot;, e);
+        }
+    }
+    
+    @Transactional
+    public void processPayment2(Payment payment) {
+        try {
+            paymentRepository.save(payment);
+            throw new Exception(&quot;受检异常&quot;);
+        } catch (Exception e) {
+            // ❌ RuntimeException才会默认回滚，受检异常不会
+            log.error(&quot;支付失败&quot;, e);
+        }
+    }
+}</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>一个事务例子：</p>
+<pre><code>@Service</code></pre>
+<pre><code>public class PaymentService {
+    
+    @Transactional
+    public void processPayment(PaymentRequest request) {
+        // 1. 保存支付记录（INSERT操作）
+        paymentRepository.save(request.toPayment());
+        
+        // 2. 业务逻辑可能抛出各种异常
+        if (request.isInvalid()) {
+            throw new IllegalArgumentException(&quot;非法请求&quot;); // ✅ RuntimeException，触发回滚
+        }
+        
+        try {
+            thirdPartyService.call(); // 可能抛出IOException（非RuntimeException）
+        } catch (IOException e) {
+            // ❌ 默认不会回滚！支付记录已保存！
+            throw new RuntimeException(&quot;调用失败&quot;, e); // 包装为RuntimeException，触发回滚
+        }
+        
+        // 3. 手动控制回滚
+        if (paymentFailed) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly(); // 标记回滚
+            // 或者，直接抛出特定异常：
+            throw new CustomBusinessException(&quot;业务失败，已回滚&quot;);
+        }
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>事务异常，会抛出 RuntimeException，例如 DataIntegrityViolationException，具体如下：</p>
+<p>[数据库操作失败 / 业务规则违例]</p>
+<pre><code>         ↓ (抛出 RuntimeException，例如 DataIntegrityViolationException)</code></pre>
+<p>[Service层 @Transactional 方法] → 事务回滚</p>
+<pre><code>         ↓ (异常继续向上抛出)</code></pre>
+<p>[Controller层方法]</p>
+<pre><code>         ↓</code></pre>
+<p>[开发者/前端看到的结果] ← 取决于：1. 是否处理异常 2. 如何处理</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<pre><code>@Transactional 是 AOP，是因为它完全遵循 AOP（面向切面编程）的核心思想和工作原理：通过动态代理，将横切关注点（事务管理） 从核心业务逻辑中分离出来，并以非侵入的方式动态织入。</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>HashMap 原理</p>
+<p>问题1：HashMap的底层数据结构是什么？</p>
+<p>Java 8+：数组 + 链表 + 红黑树</p>
+<div class="gap"></div>
+<p>关键参数：</p>
+<p>默认初始容量：16</p>
+<p>负载因子：0.75</p>
+<p>树化阈值：链表长度≥8 且 数组长度≥64时，链表转为红黑树</p>
+<p>退化阈值：树节点≤6，红黑树退化为链表</p>
+<div class="gap"></div>
+<p>是的，您说得对。在正常的业务数据和良好的哈希函数下，HashMap几乎不会触发红黑树转换，根据泊松分布，链表长度达到8的概率只有约一亿分之六。</p>
+<div class="gap"></div>
+<p>但JDK引入红黑树机制主要是一种防御性编程策略，核心目的是：</p>
+<div class="gap"></div>
+<p>防止哈希碰撞攻击：确保即使遭遇恶意攻击，性能也不会从O(1)恶化为O(n)，而是维持在O(log n)。</p>
+<div class="gap"></div>
+<p>为劣质hashCode兜底：对开发者不规范的hashCode()实现提供一定的性能保障。</p>
+<div class="gap"></div>
+<p>所以，虽然它是一个‘备胎’，但却是保障HashMap在极端情况下仍能保持可用性的关键安全网。在我们日常开发中，确保作为Key的对象正确实现hashCode()和equals()方法，就是避免触发这个‘备胎机制’的最佳实践。</p>
+<div class="gap"></div>
+<p>Q1：HashMap为什么线程不安全？</p>
+<p>回答要点：</p>
+<p>1）多线程扩容时可能形成循环链表（JDK 1.7及之前），导致CPU 100%。</p>
+<p>2）多线程put可能覆盖数据。（两个线程同时插入新节点，会有B覆盖A的情况）</p>
+<p>3）size计数不准确（非原子操作）。（两个线程拿到的当前size = 5，都认为size = 5+1 = 6，实际上应该是 7 了。）</p>
+<div class="gap"></div>
+<p>Q2：HashMap的负载因子为什么是0.75？</p>
+<p>回答要点：</p>
+<p>1）空间与时间的权衡：0.75在统计学上是最佳平衡点。</p>
+<p>2）泊松分布：链表长度≥8的概率极低（约0.00000006）。</p>
+<p>3）Spring Boot应用：可以根据实际场景调整，如缓存密集的应用可降低负载因子。</p>
+<div class="gap"></div>
+<p>Q3：Spring Boot中如何正确使用HashMap？</p>
+<p>回答要点：</p>
+<div class="gap"></div>
+<p>1）优先使用ConcurrentHashMap处理共享数据。</p>
+<p>2）考虑使用Guava Cache或Caffeine作为缓存实现。</p>
+<p>3）Rest API返回时使用DTO而非直接返回HashMap。</p>
+<p>4）配置类中的Map可使用@ConfigurationProperties自动绑定。</p>
+<div class="gap"></div>
+<p>Q4：负载因子为什么默认是0.75？</p>
+<p>空间与时间的权衡，背后的原理是泊松分布：</p>
+<p>负载因子高（如1.0）：空间利用率高，但哈希冲突增加，查询变慢。像挤满人的电梯，空间用足了，但谁都动不了，效率极低。</p>
+<p>负载因子低（如0.5）：冲突少，查询快，但空间浪费，扩容频繁。像空旷的停车场，停车容易，但土地闲置太多，不经济。</p>
+<div class="gap"></div>
+<p>0.75 像高峰期的地铁，有一定拥挤，但整体运行效率最高。</p>
+<div class="gap"></div>
+<p>Q5：如果key为null，存放在哪里？</p>
+<p>如果key = null，则为0。根据源码：hash = (key == null) ? 0 : hash(key)</p>
+<div class="gap"></div>
+<p>Q6：HashMap和ConcurrentHashMap有什么区别？</p>
+<div class="gap"></div>
+<p>对比维度	HashMap	ConcurrentHashMap (JDK 1.8)</p>
+<p>线程安全	不安全	安全</p>
+<p>锁机制	无锁	分段锁 + CAS + synchronized（锁单个桶）</p>
+<p>性能	高（无锁）	较高（锁粒度细）</p>
+<p>迭代器	快速失败 (fail-fast)	弱一致性 (weakly consistent)</p>
+<p>Null值	允许	不允许键或值为null（避免歧义）</p>
+<p>使用场景	单线程、局部变量、只读共享	多线程高并发环境</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<div class="gap"></div>
+<p>MySQL 索引</p>
+<p>B+Tree：MySQL InnoDB默认。叶子节点存储数据，非叶子节点只存键，支持范围查询和排序。</p>
+<div class="gap"></div>
+<p>Q1：B+Tree 对比 B-Tree</p>
+<p>特性	B-Tree	B+Tree (MySQL采用)</p>
+<p>数据存储	所有节点都存数据	只有叶子节点存数据，非叶子节点纯索引</p>
+<p>叶子节点	无链表链接	通过双向链表链接，便于范围查询</p>
+<p>查询稳定性	不稳定（数据可能在中间节点找到）	稳定（必须到叶子节点）</p>
+<p>适用场景	随机检索	范围查询、排序、全表扫描</p>
+<div class="gap"></div>
+<p>Q2：聚簇索引 vs 非聚簇索引</p>
+<p>维度	聚簇索引 (InnoDB主键索引)	非聚簇索引 (二级索引)</p>
+<p>数据存储	索引与数据存放在一起（叶子节点就是数据行）	叶子节点存储主键值，需要回表查询数据</p>
+<p>数量	每表仅一个	可有多个</p>
+<p>创建	自动按主键创建，无主键则选唯一非空列	手动创建</p>
+<p>性能	主键查询极快	需要回表，可能慢</p>
+<div class="gap"></div>
+<p>Q3：最左前缀原则</p>
+<div class="gap"></div>
+<p>Q4：覆盖索引</p>
+<p>定义：查询的字段全部包含在索引中，无需回表。</p>
+<div class="gap"></div>
+<p>示例：</p>
+<p>-- 表 user 有索引 (name, age)</p>
+<p>SELECT name, age FROM user WHERE name = &#x27;张三&#x27;; -- ✅ 覆盖索引</p>
+<p>SELECT * FROM user WHERE name = &#x27;张三&#x27;;        -- ❌ 需要回表</p>
+<div class="gap"></div>
+<p>Q5：如何分析索引使用情况？</p>
+<p>EXPLAIN 关键字段：</p>
+<div class="gap"></div>
+<p>type：system &gt; const &gt; ref &gt; range &gt; index &gt; ALL（最好到最差）。</p>
+<p>key：实际使用的索引。</p>
+<p>rows：预估扫描行数。</p>
+<div class="gap"></div>
+<p>Extra：</p>
+<p>Using index：覆盖索引。</p>
+<p>Using filesort：需要额外排序。</p>
+<p>Using temporary：用了临时表。</p>
+<div class="gap"></div>
+<p>Q5：大表如何添加索引？</p>
+<p>问题：直接 ALTER TABLE 会锁表，阻塞业务。</p>
+<div class="gap"></div>
+<p>解决方案：</p>
+<p>1）在线DDL工具：pt-online-schema-change (Percona Toolkit)。</p>
+<p>2）业务低峰期操作。</p>
+<p>3）先加从库，再切换。</p>
+<div class="gap"></div>
+<p>Q6：什么情况下建了索引但用不上？</p>
+<p>1) 违反最左前缀原则；</p>
+<p>2) 对索引列做了计算或函数；</p>
+<p>3) 发生了类型隐式转换；</p>
+<p>4) 使用OR且部分列无索引；</p>
+<p>5) 使用!=或NOT IN；</p>
+<p>6) LIKE以通配符开头；</p>
+<p>7) 优化器判断全表扫描更快（数据量少时）。</p>
+<div class="gap"></div>
+<p>Q7：如何优化慢查询？</p>
+<p>1) EXPLAIN分析执行计划；</p>
+<p>2) 检查是否用上合适索引；</p>
+<p>3) 考虑重写SQL，比如拆分复杂查询、使用覆盖索引；</p>
+<p>4) 调整索引或表结构；</p>
+<p>5) 对于深分页用id &gt; xxx LIMIT优化。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>事务隔离级别</p>
+<div class="gap"></div>
+<p>隔离级别	脏读	不可重复读	幻读	实现机制	性能</p>
+<p>读未提交</p>
+<p>(Read Uncommitted)	✅ 可能	✅ 可能	✅ 可能	几乎无锁	最高</p>
+<div class="gap"></div>
+<p>读已提交</p>
+<p>(Read Committed)	❌ 避免	✅ 可能	✅ 可能	语句级快照	高</p>
+<div class="gap"></div>
+<p>可重复读</p>
+<p>(Repeatable Read)	❌ 避免	❌ 避免	✅ 可能	事务级快照 + Gap Lock (MySQL)	中</p>
+<div class="gap"></div>
+<p>串行化</p>
+<p>(Serializable)	        ❌ 避免	❌ 避免	❌ 避免	完全加锁	最低</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>脏读：读到其他事务未提交的数据。</p>
+<p>不可重复读：同一个事务内，两次读取同一行数据，结果不同（因为其他事务修改并提交了）。</p>
+<p>幻读：同一个事务内，两次相同的范围查询，返回的行数不同（因为其他事务插入/删除并提交了）。</p>
+<div class="gap"></div>
+<p>Q1：MySQL默认隔离级别是什么？解决了哪些问题？</p>
+<p>MySQL InnoDB的默认隔离级别是 REPEATABLE READ（可重复读）。它通过MVCC解决了脏读和不可重复读问题。对于幻读，InnoDB在REPEATABLE READ下通过Next-Key Lock（记录锁+间隙锁）在加锁查询（如SELECT ... FOR UPDATE）时可以避免，但普通的快照读仍可能遇到幻读。所以MySQL的REPEATABLE READ实际上比SQL标准的要求更严格。</p>
+<div class="gap"></div>
+<p>Q2：如何选择隔离级别？</p>
+<p>读已提交（READ COMMITTED）：大多数Web应用的选择。平衡了性能和数据一致性，避免脏读，接受不可重复读和幻读。Oracle默认，推荐金融外的多数场景。</p>
+<div class="gap"></div>
+<p>可重复读（REPEATABLE READ）：需要事务内数据一致性的场景，如对账、报表生成。MySQL默认。</p>
+<div class="gap"></div>
+<p>串行化（SERIALIZABLE）：绝对数据一致性要求，如银行核心交易，但性能代价高。</p>
+<div class="gap"></div>
+<p>Q3：什么场景下会用到 SERIALIZABLE？</p>
+<p>两种典型场景：</p>
+<div class="gap"></div>
+<p>余额检查与扣款：需要先SELECT查余额，再UPDATE扣款。在非串行化级别下，其他事务可能在两者之间修改余额，导致超额扣款。</p>
+<div class="gap"></div>
+<p>唯一性复杂校验：需要查询多张表后插入，确保全局唯一。可用SERIALIZABLE配合SELECT ... FOR UPDATE，但实际更常用乐观锁或分布式锁替代，因为性能更好。</p>
+<div class="gap"></div>
+<p>Q4：可重复读的隔离级别下：</p>
+<div class="gap"></div>
+<p>事务A的操作	看到的数据版本	原因</p>
+<p>SELECT（快照读）	1000（旧版本）	MVCC：使用事务开始时的读视图（根据MVVC，看到的是事务开始时的数据快照）</p>
+<p>SELECT ... FOR UPDATE	900（新版本）	当前读：绕过MVCC，读取最新已提交数据并加锁</p>
+<p>UPDATE	900（新版本）	当前读：必须基于最新数据修改（事务B修改后的900）</p>
+<div class="gap"></div>
+<p>所以，在涉及余额扣减、库存减少等业务场景中，SELECT ... FOR UPDATE 不是可选项，而是必选项（建议 REPEATABLE READ + SELECT ... FOR UPDATE）</p>
+<div class="gap"></div>
+<p>Q5：</p>
+<p>UPDATE accounts SET balance=balance-? WHERE id=? AND balance&gt;=?</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>JVM 内存模型（简单）</p>
+<p>Q1：什么情况下会发生 StackOverflowError？</p>
+<p>// 示例1：递归调用无终止条件</p>
+<pre><code>public class StackOverflowDemo {
+    public void infiniteRecursion() {
+        infiniteRecursion();  // ❌ 无限递归，栈帧不断创建
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>// 示例2：方法调用层级过深</p>
+<pre><code>public class DeepCallChain {
+    public void level1() { level2(); }
+    public void level2() { level3(); }
+    // ... 持续调用几百层
+    public void level1000() { /* 操作 */ }
+}</code></pre>
+<div class="gap"></div>
+<p>// 解决方案：</p>
+<pre><code>public class SafeRecursion {
+    // 1. 设置递归终止条件
+    public int factorial(int n) {
+        if (n &lt;= 1) return 1;  // ✅ 终止条件
+        return n * factorial(n - 1);
+    }
+    
+    // 2. 使用迭代替代递归
+    public int factorialIterative(int n) {
+        int result = 1;
+        for (int i = 1; i &lt;= n; i++) {
+            result *= i;
+        }
+        return result;
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>Q2：什么情况下会发生 Heap OOM？如何排查？</p>
+<p>// 常见Heap OOM场景：</p>
+<pre><code>public class HeapOOMDemo {
+    // 1. 内存泄露
+    private static final List&lt;Object&gt; LEAK_LIST = new ArrayList&lt;&gt;();
+    
+    public void memoryLeak() {
+        while (true) {
+            LEAK_LIST.add(new byte[1024 * 1024]);  // 1MB
+            // 对象被静态集合引用，无法GC
+        }
+    }
+    
+    // 2. 大对象创建
+    public void createLargeObjects() {
+        List&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; 1000; i++) {
+            list.add(new byte[1024 * 1024 * 10]);  // 10MB每个
+        }
+    }
+    
+    // 3. 过多线程创建对象
+    public void multiThreadOOM() {
+        ExecutorService executor = Executors.newFixedThreadPool(100);
+        for (int i = 0; i &lt; 1000; i++) {
+            executor.submit(() -&gt; {
+                byte[] data = new byte[1024 * 1024];  // 每个线程1MB
+                // 处理...
+            });
+        }
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>Q3：Spring Boot 中常见的内存泄露场景？</p>
+<pre><code>@Component</code></pre>
+<pre><code>public class CommonMemoryLeakInSpring {
+    
+    // 1. 静态集合引用Spring Bean
+    private static Map&lt;String, Object&gt; cache = new HashMap&lt;&gt;();
+    
+    @Autowired
+    private UserService userService;
+    
+    @PostConstruct
+    public void init() {
+        cache.put(&quot;userService&quot;, userService);  // ❌ Spring Bean被静态引用
+    }
+    
+    // 2. ThreadLocal未清理
+    private static ThreadLocal&lt;HttpServletRequest&gt; requestHolder = 
+        new ThreadLocal&lt;&gt;();
+    
+    public void processRequest(HttpServletRequest request) {
+        requestHolder.set(request);
+        // ... 业务处理
+        
+        // ❌ 忘记清理
+        // requestHolder.remove();  // 应该调用
+    }
+    
+    // 3. 监听器未取消注册
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+    
+    public void registerListener() {
+        ApplicationListener&lt;MyEvent&gt; listener = event -&gt; {
+            // 处理事件
+        };
+        
+        eventPublisher.publishEvent(new MyEvent(this));
+        // ❌ 监听器可能被长期持有
+    }
+    
+    // 4. 大量缓存未设置过期
+    @Autowired
+    private CacheManager cacheManager;
+    
+    public void cacheData(String key, Object value) {
+        // ❌ 没有设置过期时间
+        cacheManager.getCache(&quot;myCache&quot;).put(key, value);
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>// 排查工具和命令：</p>
+<p>// 1. jps - 查看Java进程</p>
+<p>// 2. jstat -gc &lt;pid&gt; 1000 - GC统计</p>
+<p>// 3. jmap -heap &lt;pid&gt; - 堆信息</p>
+<p>// 4. jmap -histo:live &lt;pid&gt; | head -20 - 对象统计</p>
+<p>// 5. jmap -dump:format=b,file=heap.hprof &lt;pid&gt; - 堆转储</p>
+<p>// 6. jhat 或 MAT 分析堆转储文件</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>Q4：如何监控 Spring Boot 应用的内存使用？</p>
+<p>// 1. Spring Boot Actuator 端点</p>
+<pre><code>@Configuration</code></pre>
+<pre><code>@EnableWebMvc</code></pre>
+<pre><code>public class ActuatorConfig {
+    // 启用内存相关端点
+}</code></pre>
+<div class="gap"></div>
+<p>// application.yml</p>
+<p>management:</p>
+<p>  endpoints:</p>
+<pre><code>    web:
+      exposure:
+        include: &quot;health,info,metrics,prometheus,heapdump&quot;</code></pre>
+<p>  endpoint:</p>
+<pre><code>    health:
+      show-details: always
+    heapdump:
+      enabled: true</code></pre>
+<p>  metrics:</p>
+<pre><code>    export:
+      prometheus:
+        enabled: true</code></pre>
+<p>// 2. 自定义内存监控</p>
+<pre><code>@Component</code></pre>
+<pre><code>public class MemoryMonitor {
+    
+    @Scheduled(fixedRate = 60000)  // 每分钟监控一次
+    public void monitorMemory() {
+        Runtime runtime = Runtime.getRuntime();
+        long total = runtime.totalMemory();
+        long free = runtime.freeMemory();
+        long used = total - free;
+        long max = runtime.maxMemory();
+        
+        double usedPercentage = (double) used / max * 100;
+        
+        if (usedPercentage &gt; 80) {
+            // 发送告警
+            alertService.sendAlert(&quot;内存使用率过高: &quot; + usedPercentage + &quot;%&quot;);
+        }
+        
+        // 记录到日志
+        log.info(&quot;Memory Usage - Used: {}MB, Free: {}MB, Max: {}MB, Usage: {}%&quot;,
+                used / 1024 / 1024,
+                free / 1024 / 1024,
+                max / 1024 / 1024,
+                String.format(&quot;%.2f&quot;, usedPercentage));
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>// 3. 使用Micrometer监控</p>
+<pre><code>@Bean</code></pre>
+<pre><code>public MeterRegistryCustomizer&lt;MeterRegistry&gt; metricsCommonTags() {
+    return registry -&gt; registry.config().commonTags(
+        &quot;application&quot;, &quot;myapp&quot;,
+        &quot;region&quot;, System.getenv(&quot;REGION&quot;)
+    );
+}</code></pre>
+<div class="gap"></div>
+<p>// 4. 集成APM工具</p>
+<p>// SkyWalking、Pinpoint、Arthas等</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>Q5：如何优化 Spring Boot 应用的内存使用？</p>
+<p>// 实战优化方案：</p>
+<pre><code>@Configuration</code></pre>
+<pre><code>public class MemoryOptimizationConfig {
+    
+    // 1. Bean优化
+    @Bean
+    @Scope(&quot;prototype&quot;)  // 按需创建，避免单例持有过多数据
+    public ExpensiveBean expensiveBean() {
+        return new ExpensiveBean();
+    }
+    
+    // 2. 使用弱引用缓存
+    @Bean
+    public CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager() {
+            @Override
+            protected Cache createConcurrentMapCache(String name) {
+                return new ConcurrentMapCache(name, 
+                    CacheBuilder.newBuilder()
+                        .maximumSize(1000)
+                        .expireAfterWrite(10, TimeUnit.MINUTES)
+                        .weakValues()  // 使用弱引用，内存不足时可被GC
+                        .build().asMap(),
+                    false);
+            }
+        };
+    }
+    
+    // 3. 流式处理大数据：流处理，使用缓冲区，每次只读取一小部分数据到内存
+    @Service
+    public class StreamProcessingService {
+        
+        @Transactional(readOnly = true)
+        public void processLargeData() {
+            // ❌ 错误：一次性加载所有数据
+            // List&lt;User&gt; users = userRepository.findAll();
+            
+            // ✅ 正确：使用流式查询
+            try (Stream&lt;User&gt; userStream = userRepository.findAllByStream()) {
+                userStream
+                    .filter(user -&gt; user.isActive())
+                    .forEach(this::processUser);
+            }
+        }
+    }
+    
+    // 4. 合理使用Session
+    @Configuration
+    @EnableRedisHttpSession(
+        maxInactiveIntervalInSeconds = 1800,  // 30分钟过期
+        redisNamespace = &quot;mysession&quot;
+    )
+    public class SessionConfig {
+        // 使用Redis存储Session，避免内存中存储大量Session
+    }
+    
+    // 5. 图片/文件处理优化
+    @Service
+    public class ImageService {
+        
+        public void processImage(MultipartFile file) throws IOException {
+            // ❌ 错误：直接读取到byte[]
+            // byte[] data = file.getBytes();
+            
+            // ✅ 正确：使用流处理
+            try (InputStream is = file.getInputStream();
+                 BufferedImage image = ImageIO.read(is)) {
+                // 处理图片
+            }
+        }
+    }
+    
+    // 6. 线程池优化
+    @Bean
+    public Executor asyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);          // 核心线程数
+        executor.setMaxPoolSize(10);          // 最大线程数
+        executor.setQueueCapacity(100);       // 队列容量
+        executor.setThreadNamePrefix(&quot;Async-&quot;);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+}</code></pre>
+<div class="gap"></div>
+<p>Q6：Spring 管理的 Bean 有几种作用域：</p>
+<pre><code>@Component</code></pre>
+<pre><code>public class BeanScopeDemo {
+    
+    // 1. singleton（默认）：整个Spring容器中只有一个实例
+    @Scope(&quot;singleton&quot;)  // 或 @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    @Bean
+    public SingletonBean singletonBean() {
+        // 每次getBean()返回同一个实例
+        return new SingletonBean();
+    }
+    
+    // 2. prototype：每次请求都创建新实例
+    @Scope(&quot;prototype&quot;)  // 或 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    @Bean
+    public PrototypeBean prototypeBean() {
+        // 每次getBean()返回新实例
+        return new PrototypeBean();
+    }
+    
+    // 3. 其他Web相关作用域（需要Web环境）
+    // request: 每个HTTP请求一个新实例
+    // session: 每个用户会话一个新实例  
+    // application: ServletContext生命周期
+    // websocket: WebSocket会话生命周期
+}</code></pre>
+<div class="gap"></div>
+<p>Q7：电商大促期间内存飙升</p>
+<p>面试官：双11期间，你的Spring Boot应用内存使用率从40%突然涨到90%，如何快速定位和解决？</p>
+<div class="gap"></div>
+<h2 id="h-1" class="heading level-1">1. 立即行动（5分钟内）：</h2>
+<pre><code>               a. 查看监控：检查GC频率、堆内存分布 （方法一：使用 jstat 命令行工具，jps -ml，jstat -gc &lt;pid&gt; 1000 10。方法二：Spring Boot Actuator 监控，curl http://localhost:8080/actuator/metrics/jvm.memory.used，curl http://localhost:8080/actuator/metrics/jvm.gc.memory.allocated）
+               b. 重启实例：快速恢复服务（先重启一个实例）</code></pre>
+<p># 重新加载systemd配置</p>
+<p>sudo systemctl daemon-reload</p>
+<div class="gap"></div>
+<p># 重启服务</p>
+<p>sudo systemctl restart myapp</p>
+<div class="gap"></div>
+<p># 查看状态</p>
+<p>sudo systemctl status myapp</p>
+<div class="gap"></div>
+<p># 查看日志</p>
+<p>sudo journalctl -u myapp -f</p>
+<div class="gap"></div>
+<pre><code>               c. 扩容：临时增加实例数
+            
+            2. 诊断原因（15分钟）：
+               a. 获取堆转储：jmap -dump:live,format=b,file=heap.hprof &lt;pid&gt;
+               b. 分析线程：jstack &lt;pid&gt; &gt; thread.txt
+               c. 检查业务：是否有大促特定代码路径
+            
+            3. 常见原因和解决方案：
+               a. 缓存击穿：大量请求查询不存在的数据
+                  → 解决方案：布隆过滤器、空值缓存
+               
+               b. 慢查询：数据库查询返回大量数据
+                  → 解决方案：添加分页、优化索引
+               
+               c. 内存泄漏：活动Session过多
+                  → 解决方案：调整Session超时时间
+               
+               d. 代码Bug：无限循环创建对象
+                  → 解决方案：代码审查、修复Bug
+            
+            4. 预防措施：
+               a. 压力测试：提前模拟大促流量
+               b. 熔断降级：配置Hystrix/Sentinel
+               c. 监控告警：设置内存阈值告警
+               d. 限流：配置接口QPS限制</code></pre>
+<p>Q8：Spring Boot应用启动慢</p>
+<p>面试官：Spring Boot应用启动需要2分钟，如何优化到30秒内？</p>
+<div class="gap"></div>
+<h2 id="h-1" class="heading level-1">1. 类加载优化</h2>
+<pre><code>       - 减少依赖：移除不必要的starter
+       - 扫描优化：@ComponentScan指定basePackages （扫描 Spring 管理的组件：@Component, @Service, @Repository, @Controller，@RestController, @Configuration，自定义注解。不扫描普通Java类：DTO/VO/POJO 数据传输对象，Entity 实体（JPA单独处理），Util 工具类，Constants 常量类，Enums 枚举类）</code></pre>
+<p>// 企业级模板</p>
+<pre><code>@SpringBootApplication(</code></pre>
+<pre><code>    scanBasePackages = &quot;com.company.project&quot;,  // Spring Boot自动配置+指定包
+    exclude = {
+        DataSourceAutoConfiguration.class,      // 排除不需要的自动配置
+        SecurityAutoConfiguration.class         // 自定义安全配置
+    }</code></pre>
+<p>)</p>
+<pre><code>@ComponentScan(</code></pre>
+<pre><code>    basePackages = {
+        &quot;com.company.project.module.web&quot;,
+        &quot;com.company.project.module.service&quot;,
+        &quot;com.company.project.module.repository&quot;,
+        &quot;com.company.project.shared.config&quot;
+    },</code></pre>
+<pre><code>    excludeFilters = @Filter(
+        type = FilterType.REGEX,
+        pattern = {
+            &quot;.*\\.dto\\..*&quot;,
+            &quot;.*\\.vo\\..*&quot;, 
+            &quot;.*\\.util\\..*&quot;,
+            &quot;.*\\.constant\\..*&quot;
+        }
+    )</code></pre>
+<p>)</p>
+<pre><code>@EntityScan(basePackages = &quot;com.company.project.module.entity&quot;)</code></pre>
+<pre><code>@EnableJpaRepositories(basePackages = &quot;com.company.project.module.repository&quot;)</code></pre>
+<pre><code>public class EnterpriseApplication {
+    
+    // 显式导入额外配置
+    @Import({
+        ThirdPartyIntegrationConfig.class,
+        MonitoringConfig.class,
+        CacheConfig.class
+    })
+    @Configuration
+    static class AdditionalConfig {
+    }
+}</code></pre>
+<div class="gap"></div>
+<pre><code>       - 延迟加载：spring.main.lazy-initialization=true （默认false，启动时立即初始化所有Bean。设置为 true，延迟初始化，启动时只创建Bean定义，使用时才初始化。）
+        
+    2. Bean初始化优化
+       - @Lazy注解：延迟初始化
+       - 异步初始化：配置异步Bean
+        
+    3. JVM优化
+       - 调整堆大小：避免动态扩容
+       - 使用AOT：Spring Native（GraalVM）
+       - 分层编译：-XX:+TieredCompilation
+        
+    4. 配置优化
+       - 关闭JMX：spring.jmx.enabled=false
+       - 精简配置：移除不需要的自动配置
+        
+    5. 代码优化
+       - 减少@PostConstruct中的耗时操作
+       - 异步执行初始化任务</code></pre>
+<p>元数据（Metadata）是&quot;关于数据的数据&quot;</p>
+<div class="gap"></div>
+<p>// 好比商品的价格标签：</p>
+<p>商品：苹果            ← 实际数据</p>
+<p>价格：¥5.0            ← 实际数据</p>
+<p>生产日期：2024-01-15   ← 实际数据</p>
+<div class="gap"></div>
+<p>&quot;价格标签的格式&quot;         ← 元数据（描述价格数据如何展示）</p>
+<p>&quot;日期的显示规则&quot;         ← 元数据</p>
+<p>&quot;商品分类的方法&quot;         ← 元数据</p>
+<div class="gap"></div>
+<p>注解（Annotations） - 最常见的元数据</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>什么是反射？</p>
+<p>简单定义：反射（Reflection）是 Java 在运行时检查、修改自身结构和行为的能力。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>特性	@Component	@Bean</p>
+<p>注解位置	类级别（Class）	方法级别（Method）</p>
+<p>使用场景	自己编写的类	第三方库的类、需要定制的Bean</p>
+<p>控制粒度	简单实例化	完全控制实例化过程</p>
+<p>依赖注入	通过字段/构造器	通过方法参数</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.1 除了 findBy，Spring Data JPA 还支持很多推导关键字，它们都遵循相同的模式：</p>
+<div class="gap"></div>
+<p>// 相等查询</p>
+<p>List&lt;Task&gt; findByUserId(Long userId);</p>
+<p>// 多条件 AND</p>
+<p>List&lt;Task&gt; findByUserIdAndStatus(Long userId, String status);</p>
+<p>// 排序</p>
+<p>List&lt;Task&gt; findByUserIdOrderByCreatedAtDesc(Long userId);</p>
+<p>// 存在性</p>
+<p>boolean existsByUserId(Long userId);</p>
+<p>// 计数</p>
+<p>long countByUserId(Long userId);</p>
+<p>// 删除</p>
+<p>void deleteByUserId(Long userId);</p>
+<div class="gap"></div>
+<p>7.2 涉及金额必须用 BigDecimal ，像 double/float 会有精度损失</p>
+<div class="gap"></div>
+<p>构造对象：</p>
+<p>new BigDecimal(&quot;0.1&quot;) // ✅ 使用字符串构造</p>
+<p>BigDecimal.valueOf(0.1) // ✅ 内部已处理</p>
+<div class="gap"></div>
+<p>比较和排序：</p>
+<p>bd1.compareTo(bd2) == 0 // ✅ 比较值.注意：equals()还比较精度(scale)，1.0≠1.00</p>
+<p>bd1 == bd2 或 bd1.equals(bd2) // ❌</p>
+<div class="gap"></div>
+<p>算术运算:</p>
+<p>bd1.add(bd2) // ✅ 加法</p>
+<p>bd1.multiply(bd2) // ✅ 乘法</p>
+<p>bd1 + bd2 // ❌ Java不支持运算符重载</p>
+<div class="gap"></div>
+<p>bd1.divide(bd2, 2, RoundingMode.HALF_UP) // ✅ 指定小数位和舍入模式</p>
+<p>bd1.divide(bd2) // ❌ 可能除不尽抛异常</p>
+<div class="gap"></div>
+<p>设置精度：</p>
+<p>bd.setScale(2, RoundingMode.HALF_UP) // ✅ 四舍五入</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.3 重新加载maven依赖</p>
+<p>方法1：IDE刷新（推荐）</p>
+<p>在 IntelliJ IDEA 中：</p>
+<div class="gap"></div>
+<p>右键点击项目根目录的 pom.xml</p>
+<p>选择 Maven → Reload Project</p>
+<div class="gap"></div>
+<p>方法2：命令行</p>
+<p>cd /Users/dengmuwen/Documents/codes/www/my_java_code/demo-api</p>
+<p>mvn clean install</p>
+<div class="gap"></div>
+<p>cd /Users/dengmuwen/Documents/codes/www/my_java_code/demo-api &amp;&amp; mvn dependency:resolve -q</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.4 Maven命令</p>
+<p>a. ‌mvn clean package</p>
+<p>清理项目（清理 target/ 目录），compile 编译代码，test 运行测试、指定package打包</p>
+<div class="gap"></div>
+<p>总结来说，mvn clean package 是将 Spring Boot 2 应用打包为独立可执行 JAR 文件的标准、推荐命令，是部署到生产或测试环境前的必要步骤。‌</p>
+<div class="gap"></div>
+<p>b. ‌mvn clean install</p>
+<p>清理项目（清理 target/ 目录），compile 编译代码，test 运行测试、指定package打包。并将生成的包文件安装到本地Maven仓库。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.5 Java VS PHP</p>
+<p>维度	Java (Spring Boot)	PHP (Laravel)</p>
+<p>执行方式	编译 + 常驻内存	解释 + 请求即销毁</p>
+<p>性能	运行快，启动慢，常驻内存的&quot;长期工作者&quot;（编译型 + JVM + JIT，Java快是因为有JIT），处理高并发。	启动快，运行相对慢。请求即销毁的&quot;临时工&quot;（解释型 + CGI）</p>
+<p>类型系统	静态强类型	动态弱类型</p>
+<p>并发处理	强大（多线程），可以共享数据库连接池	有限（多进程），每个请求独立连接，1000个并发则可能创建 1000 个数据库连接。现在有了Workerman/Swoole也可以常驻内存了。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>（1）处理第一个请求</p>
+<p>Java：</p>
+<p>1. 用户访问 /api/users</p>
+<p>2. JVM 已运行，直接调用已有对象</p>
+<p>3. 响应时间：50ms</p>
+<div class="gap"></div>
+<p>PHP：</p>
+<p>1. 用户访问 /api/users</p>
+<p>2. Nginx 收到请求 → 启动 PHP-FPM 进程</p>
+<p>3. PHP 解释器读取文件 → 执行代码</p>
+<p>4. 响应时间：100ms</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>（2）处理第 1000 个请求</p>
+<p>Java：</p>
+<p>1. 用户访问 /api/users</p>
+<p>2. 直接调用内存中的对象</p>
+<p>3. 响应时间：20ms（JIT 优化后更快）</p>
+<h2 id="h-4" class="heading level-1">4. 内存：还是 300MB</h2>
+<div class="gap"></div>
+<p>PHP：</p>
+<p>1. 用户访问 /api/users</p>
+<p>2. 可能创建新的 PHP 进程</p>
+<p>3. 重新解释执行</p>
+<p>4. 响应时间：100ms（与第一次差不多）</p>
+<p>5. 内存：累积使用，但每个请求后释放</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.6 JVM （Java Virtual Machine） 是 Java 的虚拟计算机，</p>
+<p>源代码 (.java)</p>
+<pre><code>    ↓ 编译</code></pre>
+<p>字节码 (.class)      ← 这是平台无关的</p>
+<pre><code>    ↓</code></pre>
+<p>JVM 加载字节码</p>
+<pre><code>    ↓</code></pre>
+<p>JVM 解释执行</p>
+<pre><code>    ↓</code></pre>
+<p>操作系统 + CPU</p>
+<div class="gap"></div>
+<p>JVM 让java在各种环境都能跑起来。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>// JVM 内存结构（简化）</p>
+<p>JVM 内存区域：</p>
+<p>┌─────────────────────────────────────┐</p>
+<p>│         方法区（Method Area）         │ ← 存储类信息、常量池</p>
+<p>├─────────────────────────────────────┤</p>
+<p>│         堆（Heap）                   │ ← 所有对象都在这里（GC 管理）</p>
+<p>├─────────────────────────────────────┤</p>
+<p>│         栈（Stack）                  │ ← 线程私有，存储局部变量</p>
+<p>├─────────────────────────────────────┤</p>
+<p>│       程序计数器（PC Register）        │ ← 当前执行位置</p>
+<p>├─────────────────────────────────────┤</p>
+<p>│   本地方法栈（Native Method Stack）   │ ← 调用本地方法</p>
+<p>└─────────────────────────────────────┘</p>
+<div class="gap"></div>
+<p>// 启动 JVM 时的重要参数</p>
+<p>java -Xms512m    # 初始堆大小</p>
+<pre><code>     -Xmx1024m   # 最大堆大小
+     -Xss256k    # 每个线程栈大小
+     -jar app.jar （app.jar 文件里 编译后生成的.class 文件是核心）</code></pre>
+<p>7.7 JIT：让 Java 飞起来的关键</p>
+<p>JIT（Just-In-Time Compilation，即时编译） 是 JVM 的性能加速器</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>没有 JIT 时：</p>
+<p>Java 字节码 → JVM 解释执行 → 有点慢</p>
+<div class="gap"></div>
+<p>有 JIT 时：</p>
+<p>热点代码（经常执行的代码） → JIT 编译成本地机器码 → 直接执行 → 很快！</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>JIT 就像给 Java 装了个记忆芯片，第一次执行时记住怎么做，以后直接照做，不用每次都重新想（解释）。这就是为什么 Java 越跑越快，而 PHP（传统方式）每次都要重新想。</p>
+<div class="gap"></div>
+<p>7.8 部署java到生产环境</p>
+<div class="gap"></div>
+<p>方法一：使用可执行JAR（最常见）</p>
+<p>1）打包</p>
+<p># Maven</p>
+<p>mvn clean package</p>
+<p># 输出：target/你的应用名.jar</p>
+<div class="gap"></div>
+<p># Gradle</p>
+<p>./gradlew bootJar</p>
+<p># 输出：build/libs/你的应用名.jar</p>
+<div class="gap"></div>
+<p>2）传输：将JAR文件上传到服务器</p>
+<div class="gap"></div>
+<p>3）运行：使用java -jar</p>
+<p># 最基本启动</p>
+<p>java -jar /opt/app/你的应用名.jar</p>
+<div class="gap"></div>
+<p># 生产环境推荐：指定内存、GC等参数，并在后台运行</p>
+<p>nohup java -Xms512m -Xmx1024m -XX:+UseG1GC -jar /opt/app/你的应用名.jar \</p>
+<pre><code>     --server.port=8080 \
+     &gt; /opt/app/app.log 2&gt;&amp;1 &amp;</code></pre>
+<p>4）配置nginx进行反向代理到8080。</p>
+<div class="gap"></div>
+<p>方法二：</p>
+<p>使用系统服务管理器（如 systemd 或 supervisor）来管理Java进程，实现开机自启、故障重启、日志轮转等</p>
+<div class="gap"></div>
+<p>方法三：</p>
+<p>Docker</p>
+<div class="gap"></div>
+<p>7.9 Java 异常</p>
+<p>Java 中有两种异常：</p>
+<div class="gap"></div>
+<p>受检异常 (Checked Exception)：必须被捕获或声明抛出</p>
+<p>非受检异常 (Runtime Exception)：可以不处理</p>
+<div class="gap"></div>
+<p>7.10 Spring 依赖注入的注解</p>
+<p>// 1. @Component - 通用组件</p>
+<pre><code>@Component  // 最通用，任何类都可以用</code></pre>
+<pre><code>public class MyService { ... }</code></pre>
+<div class="gap"></div>
+<p>// 2. @Service - 业务逻辑层</p>
+<pre><code>@Service    // 语义化，表示这是业务服务</code></pre>
+<pre><code>public class UserService { ... }</code></pre>
+<div class="gap"></div>
+<p>// 3. @Repository - 数据访问层  </p>
+<pre><code>@Repository // 语义化，表示这是数据访问组件</code></pre>
+<pre><code>public class UserRepository { ... }</code></pre>
+<div class="gap"></div>
+<p>// 4. @Controller - Web控制器层</p>
+<pre><code>@Controller // 处理HTTP请求</code></pre>
+<pre><code>public class UserController { ... }</code></pre>
+<div class="gap"></div>
+<p>// 5. @RestController = @Controller + @ResponseBody</p>
+<pre><code>@RestController // REST API控制器</code></pre>
+<pre><code>public class ApiController { ... }</code></pre>
+<div class="gap"></div>
+<p>// 6. @Configuration - 配置类</p>
+<pre><code>@Configuration // 包含@Bean方法的配置类</code></pre>
+<pre><code>public class AppConfig { ... }</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>注解	用途	特殊处理	示例</p>
+<pre><code>@Component	通用组件	无	工具类、拦截器、过滤器</code></pre>
+<pre><code>@Service	业务服务	事务代理	UserService, OrderService</code></pre>
+<pre><code>@Repository	数据访问	异常转换	UserRepository, ProductRepository</code></pre>
+<pre><code>@Controller	Web控制器	请求映射	UserController（传统返回视图的 MVC 控制器）</code></pre>
+<pre><code>@RestController	REST控制器	自动@ResponseBody	ApiController（RESTful API）</code></pre>
+<pre><code>@Configuration	配置类	代理模式	SecurityConfig, WebConfig</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.11 </p>
+<p>获取当前用户的信息</p>
+<div class="gap"></div>
+<p>方式一：Request属性（HttpServletRequest）</p>
+<p>优点：</p>
+<p>✅ 实现简单直接</p>
+<p>✅ 无需额外依赖</p>
+<p>✅ 自动随请求链传递</p>
+<p>缺点：</p>
+<p>❌ 只在当前请求周期内有效</p>
+<p>❌ 不适合异步操作，因为Request 对象只在当前请求线程中有效，如果有异步创建了新线程，则获取不到了。</p>
+<div class="gap"></div>
+<p>方式二：Spring Security（SecurityContext）</p>
+<p>优点：</p>
+<p>✅ Spring 官方推荐方案</p>
+<p>✅ 支持异步操作，可以从主线程拿到用户信息</p>
+<p>✅ 功能完整（权限、角色管理等）</p>
+<p>✅ 生态完善</p>
+<p>缺点：</p>
+<p>❌ 需要引入 Spring Security 依赖</p>
+<p>❌ 学习成本稍高</p>
+<p>❌ 需要手动清理（防止内存泄漏）</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.12 过滤器 vs 拦截器 vs 切面</p>
+<p>请求流程：</p>
+<p>客户端</p>
+<pre><code>    ↓</code></pre>
+<p>过滤器 (Filter)          ← 最早，Servlet 层面</p>
+<pre><code>    ↓</code></pre>
+<p>DispatcherServlet</p>
+<pre><code>    ↓</code></pre>
+<p>拦截器 (Interceptor)      ← Spring MVC 层面</p>
+<pre><code>    ↓</code></pre>
+<p>Controller</p>
+<pre><code>    ↓</code></pre>
+<p>切面 (Aspect)            ← 方法级别，最灵活</p>
+<pre><code>    ↓</code></pre>
+<p>Service业务逻辑</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>7.13 Request Body 日志记录 - 实现说明</p>
+<p>a. 问题：之前 log.info(&quot;Request Body: {}&quot;, request.getAttribute(&quot;requestBody&quot;)) 返回 null</p>
+<div class="gap"></div>
+<p>b. 原因：HTTP Request Body 只能读取一次：</p>
+<div class="gap"></div>
+<p>Servlet 的 InputStream 读取后就关闭了</p>
+<p>Spring MVC 在参数绑定时已经读取了 Body</p>
+<p>在 AOP 切面中再次读取时，流已经空了</p>
+<div class="gap"></div>
+<p>c. 解决方案</p>
+<p>RepeatedlyReadRequestWrapper（Request 包装器）</p>
+<p>原始 Request</p>
+<pre><code>    ↓</code></pre>
+<p>读取 InputStream 并缓存到 byte[]</p>
+<pre><code>    ↓</code></pre>
+<p>重写 getInputStream() 方法</p>
+<pre><code>    ↓</code></pre>
+<p>每次调用时从缓存的 byte[] 创建新的流</p>
+<pre><code>    ↓</code></pre>
+<p>实现可重复读取</p>
+<div class="gap"></div>
+<p>d. RequestBodyCacheFilter（过滤器）</p>
+<div class="gap"></div>
+<p>作用：</p>
+<div class="gap"></div>
+<p>拦截所有 HTTP 请求</p>
+<p>对 POST/PUT/PATCH 请求包装成可重复读取的 Request</p>
+<p>将 Body 内容设置到 request 属性中</p>
+<div class="gap"></div>
+<p>7.14 Spring Security</p>
+<p>基于URL，对于接口的访问控制：主要是通过 Servlet Filter 链 实现的。这是你必须理解和配置的基础。</p>
+<pre><code>@Override</code></pre>
+<pre><code>protected void configure(HttpSecurity http) throws Exception {
+    http.authorizeRequests()
+        .antMatchers(&quot;/api/admin/**&quot;).hasRole(&quot;ADMIN&quot;) // /api/admin/ 下的接口需要ADMIN角色
+        .antMatchers(&quot;/api/user/**&quot;).hasAnyRole(&quot;USER&quot;, &quot;ADMIN&quot;) // 需要USER或ADMIN角色
+        .antMatchers(&quot;/api/public/**&quot;).permitAll() // 公开访问
+        .anyRequest().authenticated() // 其他所有请求都需要认证
+        .and()
+        .addFilterBefore(new JwtTokenFilter(), UsernamePasswordAuthenticationFilter.class); // 添加JWT过滤器
+}</code></pre>
+<div class="gap"></div>
+<p>基于方法，对于更复杂、基于业务逻辑的权限判断：应使用基于 Spring AOP 的 @PreAuthorize 等注解。例如，判断用户是否能删除“自己发布的”文章，这种依赖数据身份的权限，非常适合用 @PreAuthorize(“@permissionService.checkOwnership(#id, principal)”) 来实现</p>
+<div class="gap"></div>
+<pre><code>@RestController</code></pre>
+<pre><code>@RequestMapping(&quot;/api/products&quot;)</code></pre>
+<pre><code>public class ProductController {
+    @DeleteMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasRole(&#x27;ADMIN&#x27;) or @permissionService.canDeleteProduct(#id, principal)&quot;) // 支持SpEL表达式，可调用自定义逻辑
+    public ResponseEntity&lt;?&gt; deleteProduct(@PathVariable Long id) {
+        // 删除商品逻辑
+    }
+}</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+                </main>
+            </div>
+        </div>
+        
+        <!-- 招聘篇 -->
+        <div class="tab-panel">
+            <div class="layout">
+                <aside class="sidebar">
+                    <div class="sidebar-title">📑 目录导航</div>
+                    <div class="toc-tree">
+        <a href="#h-1" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">1</span>
+            <span class="toc-text">Spring Boot启动流程</span>
+        </a>
+        <a href="#h-2" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">2</span>
+            <span class="toc-text">请求参数处理</span>
+        </a>
+        <a href="#h-3" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">3</span>
+            <span class="toc-text">拦截器（Interceptor）与过滤器（Filter）对比</span>
+        </a>
+        <a href="#h-4" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">4</span>
+            <span class="toc-text">Spring Data JPA</span>
+        </a>
+        <a href="#h-5" class="toc-link level-1" style="padding-left: 0px;">
+            <span class="toc-num">5</span>
+            <span class="toc-text">事务管理</span>
+        </a></div>
+                </aside>
+                <main class="main">
+                    <p>简历：</p>
+<p>使用 Spring Boot 开发 REST API，</p>
+<p>实现基于 JWT 的登录鉴权，</p>
+<p>通过 AOP 处理事务与日志</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>【能力要求】：</p>
+<p>1、Java基础扎实，理解IO、多线程、集合等基础架构，熟悉JVM原理，熟悉常用的Java开源框架，对使用过的框架能了解到原理和机制，熟悉springboot，springcloud等常用开源框架；</p>
+<p>2、了解互联网系统的架构，2年以上的高可用、分布式大型系统架构和开发经验，丰富的线上运维经验，熟悉缓存、消息等机制，熟悉开源中间件的使用，了解其原理和机制。</p>
+<p>3、有高并发、高可用性系统设计与开发的经验，有性能调优的经验，掌握多线程及高性能的设计与编码及性能调优；有高并发应用开发经验。</p>
+<p>4、对数据抽象、领域建模等有相关的工作经验，有大数据处理及算法经验者优先。（Hadoop/Spark/Flink/Kafka等大数据与流处理技术）</p>
+<p>5、掌握Linux 操作系统和大型数据库（Oracle、MySql）、对sql优化有丰富的经验。</p>
+<p>6、具备良好的设计通用框架及模块的能力。具备良好的系统分析能力、抽象能力，擅长分析复杂问题和解决问题。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>根据上面的要求，总结如下：</p>
+<h2 id="h-1" class="heading level-1">1. Spring Boot启动流程</h2>
+<p>从SpringApplication.run()开始的关键步骤（加载配置、创建上下文、刷新上下文等）。</p>
+<div class="gap"></div>
+<p>内嵌Web服务器（如Tomcat）的启动过程。</p>
+<div class="gap"></div>
+<h2 id="h-2" class="heading level-1">2. 请求参数处理</h2>
+<pre><code>@RequestParam、@RequestBody、@Valid校验参数</code></pre>
+<div class="gap"></div>
+<p>全局异常处理（@ControllerAdvice和@ExceptionHandler）。</p>
+<pre><code>@ControllerAdvice：全局异常处理和全局数据绑定的注解。</code></pre>
+<pre><code>@ExceptionHandler(异常类.class)，处理指定类型的异常。</code></pre>
+<div class="gap"></div>
+<h2 id="h-3" class="heading level-1">3. 拦截器（Interceptor）与过滤器（Filter）对比</h2>
+<div class="gap"></div>
+<p>维度	过滤器（Filter）	拦截器（Interceptor）</p>
+<p>所属规范	Servlet规范（javax.servlet）	Spring MVC框架（org.springframework.web.servlet）</p>
+<p>作用范围	所有Web资源（Servlet、JSP、静态资源）	只针对Spring MVC管理的控制器（Controller）</p>
+<p>依赖	不依赖Spring框架，可在任何Java Web应用中使用	依赖Spring MVC框架</p>
+<p>执行时机	在请求进入Servlet之前，响应离开Servlet之后	在DispatcherServlet处理请求前后</p>
+<p>获取Spring Bean	无法直接注入Spring Bean（需通过其他方式）	可直接使用Spring依赖注入</p>
+<div class="gap"></div>
+<p>执行流程：</p>
+<p>HTTP Request → Tomcat → Filter Chain → DispatcherServlet → Interceptor Chain → Controller</p>
+<pre><code>           ↓                                                      ↓</code></pre>
+<p>HTTP Response ← Tomcat ← Filter Chain ← DispatcherServlet ← Interceptor Chain ← Controller</p>
+<div class="gap"></div>
+<p>DispatcherServlet负责：将接收到的HTTP请求，发给相应的控制器处理</p>
+<div class="gap"></div>
+<p>1) Filter：IP黑白名单 → 字符编码设置 → CORS处理</p>
+<p>2) Interceptor：登录验证 → 权限校验 → 接口日志</p>
+<p>3) AOP：业务层日志 → 事务管理 → 性能监控</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>常见面试问题</p>
+<p>1）过滤器和拦截器的执行顺序是怎样的？</p>
+<div class="gap"></div>
+<p>过滤器在DispatcherServlet之前执行，拦截器在DispatcherServlet之后执行</p>
+<div class="gap"></div>
+<p>多个过滤器按注册顺序执行，多个拦截器按配置顺序执行</p>
+<div class="gap"></div>
+<p>2）过滤器中可以注入Spring Bean吗？</p>
+<div class="gap"></div>
+<p>直接使用@Autowired无效，需要通过WebApplicationContextUtils获取</p>
+<div class="gap"></div>
+<p>或使用Spring的DelegatingFilterProxy</p>
+<div class="gap"></div>
+<p>3）什么情况下拦截器的postHandle方法不会执行？</p>
+<div class="gap"></div>
+<p>preHandle返回false时</p>
+<div class="gap"></div>
+<p>Controller抛出异常且未被@ControllerAdvice捕获时</p>
+<div class="gap"></div>
+<p>4）如何全局捕获Controller异常？</p>
+<div class="gap"></div>
+<p>使用@ControllerAdvice + @ExceptionHandler（在拦截器之后执行）</p>
+<div class="gap"></div>
+<p>无法在过滤器中捕获Controller异常</p>
+<div class="gap"></div>
+<p>5）如何处理静态资源？</p>
+<div class="gap"></div>
+<p>过滤器可以处理所有静态资源</p>
+<div class="gap"></div>
+<p>拦截器默认不处理静态资源，需通过配置排除</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<h2 id="h-4" class="heading level-1">4. Spring Data JPA</h2>
+<p>4.1 关联关系注解</p>
+<p>一对一（One-to-One）</p>
+<div class="gap"></div>
+<pre><code>@Entity</code></pre>
+<pre><code>public class User {
+    @Id
+    private Long id;
+    
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;address_id&quot;, referencedColumnName = &quot;id&quot;)
+    private Address address;  // 用户拥有一个地址
+}</code></pre>
+<div class="gap"></div>
+<pre><code>@Entity</code></pre>
+<pre><code>public class Address {
+    @Id
+    private Long id;
+    
+    @OneToOne(mappedBy = &quot;address&quot;)
+    private User user;  // 地址被一个用户拥有
+}</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>一对多（One-to-Many）</p>
+<pre><code>@Entity</code></pre>
+<pre><code>public class Department {
+    @Id
+    private Long id;
+    
+    @OneToMany(mappedBy = &quot;department&quot;, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+    // mappedBy表示关系由Employee类的department属性维护
+}</code></pre>
+<div class="gap"></div>
+<pre><code>@Entity</code></pre>
+<pre><code>public class Employee {
+    @Id
+    private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;dept_id&quot;)
+    private Department department;  // 外键维护方
+}</code></pre>
+<div class="gap"></div>
+<div class="gap"></div>
+<p>一对多（One-to-Many）</p>
+<pre><code>@Entity</code></pre>
+<pre><code>public class Department {
+    @Id
+    private Long id;
+    
+    @OneToMany(mappedBy = &quot;department&quot;, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List&lt;Employee&gt; employees = new ArrayList&lt;&gt;();
+    // mappedBy表示关系由Employee类的department属性维护
+}</code></pre>
+<div class="gap"></div>
+<pre><code>@Entity</code></pre>
+<pre><code>public class Employee {
+    @Id
+    private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;dept_id&quot;)
+    private Department department;  // 外键维护方
+}</code></pre>
+<div class="gap"></div>
+<p>4.2 方法命名规则查询</p>
+<p>findBy/readBy/queryBy/getBy/countBy/deleteBy + 属性 + 条件</p>
+<div class="gap"></div>
+<p>// 1. 简单条件查询</p>
+<p>User findByUsername(String username);</p>
+<p>List&lt;User&gt; findByEmail(String email);</p>
+<p>User findByUsernameAndEmail(String username, String email);</p>
+<div class="gap"></div>
+<p>// 2. 比较查询</p>
+<p>List&lt;User&gt; findByAgeGreaterThan(int age);</p>
+<p>List&lt;User&gt; findByAgeLessThanEqual(int age);  // 小于等于</p>
+<p>List&lt;User&gt; findByAgeBetween(int min, int max);</p>
+<p>List&lt;User&gt; findByAgeNotBetween(int start, int end);  // 不在区间内</p>
+<p>List&lt;User&gt; findByAgeIn(Collection&lt;Integer&gt; ages);</p>
+<p>List&lt;User&gt; findByAgeNotIn(Collection&lt;Integer&gt; ages);</p>
+<p>List&lt;User&gt; findByCreateTimeAfter(Date date);       // 创建时间晚于指定时间</p>
+<p>List&lt;User&gt; findByCreateTimeBefore(Date date);      // 创建时间早于指定时间</p>
+<div class="gap"></div>
+<p>// 3. 模糊查询</p>
+<p>List&lt;User&gt; findByUsernameContaining(String keyword);</p>
+<p>List&lt;User&gt; findByUsernameLike(String pattern);  // %keyword%</p>
+<p>List&lt;User&gt; findByUsernameStartingWith(String prefix);</p>
+<p>List&lt;User&gt; findByUsernameEndingWith(String suffix);</p>
+<div class="gap"></div>
+<p>// 4. 排序查询</p>
+<p>List&lt;User&gt; findByAgeOrderByCreateTimeDesc(int age);</p>
+<p>List&lt;User&gt; findByStatusOrderByUsernameAscCreateTimeDesc(UserStatus status);</p>
+<div class="gap"></div>
+<p>// 5. 统计查询</p>
+<p>long countByStatus(UserStatus status);</p>
+<p>boolean existsByEmail(String email);</p>
+<p>int deleteByStatus(UserStatus status);</p>
+<div class="gap"></div>
+<p>// 6. 关联查询</p>
+<p>List&lt;User&gt; findByDepartmentName(String deptName);</p>
+<p>List&lt;User&gt; findByDepartment_Id(Long deptId);  // 使用下划线访问关联对象属性</p>
+<div class="gap"></div>
+<p>// 空值检查</p>
+<p>List&lt;User&gt; findByEmailIsNull();      // email为NULL</p>
+<p>List&lt;User&gt; findByEmailIsNotNull();   // email不为NULL</p>
+<div class="gap"></div>
+<p>// 结合其他条件</p>
+<p>List&lt;User&gt; findByEmailIsNotNullAndStatus(UserStatus status);</p>
+<div class="gap"></div>
+<p>4.3 @Query注解查询</p>
+<p>JPQL查询（面向实体）</p>
+<div class="gap"></div>
+<pre><code>    @Query(&quot;SELECT u FROM User u WHERE u.username = :name OR u.email = :email&quot;)</code></pre>
+<pre><code>    User findByNameOrEmail(@Param(&quot;name&quot;) String username, @Param(&quot;email&quot;) String email);</code></pre>
+<p>原生SQL查询：</p>
+<pre><code>    @Query(value = &quot;SELECT * FROM users u WHERE u.age &gt; :age&quot;, nativeQuery = true)</code></pre>
+<pre><code>    List&lt;User&gt; findUsersOlderThan(@Param(&quot;age&quot;) int age);</code></pre>
+<h2 id="h-5" class="heading level-1">5. 事务管理</h2>
+<div class="gap"></div>
+<pre><code>@Transactional的工作原理及传播行为（Propagation）、隔离级别（Isolation）。</code></pre>
+<div class="gap"></div>
+<p>声明式事务与编程式事务的区别。</p>
+<div class="gap"></div>
+<div class="gap"></div>
+<div class="gap"></div>
+                </main>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>📖 持续学习，不断进步 · 最后更新：2026年2月</p>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(index) {
+            // 切换标签
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            
+            // 切换面板
+            document.querySelectorAll('.tab-panel').forEach((panel, i) => {
+                panel.classList.toggle('active', i === index);
+            });
+        }
+        
+        // 平滑滚动 - 在主内容区域内滚动
+        document.querySelectorAll('.toc-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // 获取目标元素ID
+                const targetId = this.getAttribute('href').substring(1);
+                
+                // 找到当前激活的tab-panel
+                const activePanel = document.querySelector('.tab-panel.active');
+                
+                if (activePanel) {
+                    // 在激活的面板中查找目标元素
+                    const targetElement = activePanel.querySelector('#' + targetId);
+                    const mainContent = activePanel.querySelector('.main');
+                    
+                    if (targetElement && mainContent) {
+                        // 计算目标元素相对于主内容区的位置
+                        const targetPosition = targetElement.offsetTop - mainContent.offsetTop - 20;
+                        
+                        // 在主内容区域内滚动
+                        mainContent.scrollTo({
+                            top: targetPosition,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
