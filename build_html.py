@@ -309,6 +309,7 @@ def main():
             border-right: 1px solid #e1e4e8;
             overflow-y: auto;
             height: calc(100vh - 180px);
+            flex-shrink: 0;
         }}
         
         .sidebar-title {{
@@ -420,6 +421,31 @@ def main():
             font-size: 0.9rem;
         }}
         
+        /* Mobile Toggle */
+        .mobile-toc-toggle {{
+            display: none;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.8rem 1rem;
+            width: 100%;
+            text-align: left;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }}
+        
+        .mobile-toc-toggle:active {{
+            background: #5568d3;
+        }}
+        
+        .toc-tree.collapsed {{
+            display: none;
+        }}
+        
         /* Responsive */
         @media (max-width: 1024px) {{
             .sidebar {{
@@ -443,21 +469,53 @@ def main():
             
             .sidebar {{
                 width: 100%;
-                max-height: 300px;
-                position: static;
+                height: auto;
+                max-height: none;
+                border-right: none;
+                border-bottom: 2px solid #e1e4e8;
+            }}
+            
+            .sidebar-title {{
+                display: none;
+            }}
+            
+            .mobile-toc-toggle {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }}
+            
+            .toc-tree {{
+                max-height: 60vh;
+                overflow-y: auto;
             }}
             
             .main {{
-                padding: 1.5rem;
+                padding: 1rem;
+                height: auto;
+                overflow-y: visible;
+            }}
+            
+            .main pre {{
+                font-size: 0.85rem;
+                overflow-x: auto;
             }}
             
             .header h1 {{
                 font-size: 1.8rem;
             }}
             
+            .header p {{
+                font-size: 0.9rem;
+            }}
+            
             .tab {{
-                padding: 0.8rem 1rem;
-                font-size: 0.95rem;
+                padding: 0.8rem 0.5rem;
+                font-size: 0.9rem;
+            }}
+            
+            .heading {{
+                word-break: break-word;
             }}
         }}
         
@@ -501,6 +559,10 @@ def main():
             <div class="layout">
                 <aside class="sidebar">
                     <div class="sidebar-title">📑 目录导航</div>
+                    <button class="mobile-toc-toggle" onclick="toggleToc(this)">
+                        <span>📑 目录导航</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
                     {toc_html1}
                 </aside>
                 <main class="main">
@@ -514,6 +576,10 @@ def main():
             <div class="layout">
                 <aside class="sidebar">
                     <div class="sidebar-title">📑 目录导航</div>
+                    <button class="mobile-toc-toggle" onclick="toggleToc(this)">
+                        <span>📑 目录导航</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
                     {toc_html2}
                 </aside>
                 <main class="main">
@@ -538,9 +604,29 @@ def main():
             document.querySelectorAll('.tab-panel').forEach((panel, i) => {{
                 panel.classList.toggle('active', i === index);
             }});
+            
+            // 移动端：收起所有目录
+            if (window.innerWidth <= 768) {{
+                document.querySelectorAll('.toc-tree').forEach(toc => {{
+                    toc.classList.add('collapsed');
+                }});
+                document.querySelectorAll('.toggle-icon').forEach(icon => {{
+                    icon.textContent = '▼';
+                }});
+            }}
         }}
         
-        // 平滑滚动 - 在主内容区域内滚动
+        // 切换目录显示/隐藏（移动端）
+        function toggleToc(button) {{
+            const sidebar = button.closest('.sidebar');
+            const tocTree = sidebar.querySelector('.toc-tree');
+            const icon = button.querySelector('.toggle-icon');
+            
+            tocTree.classList.toggle('collapsed');
+            icon.textContent = tocTree.classList.contains('collapsed') ? '▼' : '▲';
+        }}
+        
+        // 平滑滚动
         document.querySelectorAll('.toc-link').forEach(link => {{
             link.addEventListener('click', function(e) {{
                 e.preventDefault();
@@ -557,18 +643,47 @@ def main():
                     const mainContent = activePanel.querySelector('.main');
                     
                     if (targetElement && mainContent) {{
-                        // 计算目标元素相对于主内容区的位置
-                        const targetPosition = targetElement.offsetTop - mainContent.offsetTop - 20;
+                        // 移动端判断
+                        const isMobile = window.innerWidth <= 768;
                         
-                        // 在主内容区域内滚动
-                        mainContent.scrollTo({{
-                            top: targetPosition,
-                            behavior: 'smooth'
-                        }});
+                        if (isMobile) {{
+                            // 移动端：收起目录并滚动页面
+                            const tocTree = this.closest('.toc-tree');
+                            if (tocTree) {{
+                                tocTree.classList.add('collapsed');
+                                const toggleBtn = activePanel.querySelector('.mobile-toc-toggle');
+                                if (toggleBtn) {{
+                                    const icon = toggleBtn.querySelector('.toggle-icon');
+                                    if (icon) icon.textContent = '▼';
+                                }}
+                            }}
+                            
+                            // 滚动到目标元素（相对于整个容器）
+                            setTimeout(() => {{
+                                targetElement.scrollIntoView({{
+                                    behavior: 'smooth',
+                                    block: 'start'
+                                }});
+                            }}, 100);
+                        }} else {{
+                            // 桌面端：在主内容区内滚动
+                            const targetPosition = targetElement.offsetTop - mainContent.offsetTop - 20;
+                            mainContent.scrollTo({{
+                                top: targetPosition,
+                                behavior: 'smooth'
+                            }});
+                        }}
                     }}
                 }}
             }});
         }});
+        
+        // 初始化：移动端默认收起目录
+        if (window.innerWidth <= 768) {{
+            document.querySelectorAll('.toc-tree').forEach(toc => {{
+                toc.classList.add('collapsed');
+            }});
+        }}
     </script>
 </body>
 </html>"""
