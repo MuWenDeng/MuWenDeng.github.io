@@ -55,7 +55,47 @@ stop() 在另一个线程里调用
 
 如果没有volatile，JVM会把 active 缓存在CPU寄存器里，导致while永远读不到false。volatile保证不缓存，每次从主内存读。
 
+分析：
+寄存器缓存是编译器/JIT的优化行为，目的是减少昂贵的内存访问。
+volatile通过内存屏障阻止这种优化，保证每次从主内存读取。
+问题不只是寄存器，还包括CPU缓存一致性、写缓冲区等。
+
+计算机存储层次结构：
+CPU性能：寄存器 > L1缓存 > L2缓存 > L3缓存 > 主内存 > 磁盘
+访问速度：0.5ns   > 1ns   > 3ns   > 10ns   > 100ns  > 10ms
+容量大小：KB级别  < MB级别 < MB级别 < MB级别 < GB级别 < TB级别
+
+JVM不会把整个变量"存储"在寄存器里长期保存。准确的说法是：
+// 误解：把active变量存储在寄存器里
+寄存器[active] = true;  // ❌ 不是这样！
+
+// 实际：把active的值加载到寄存器进行运算
+boolean temp = active;  // 加载到寄存器
+while (temp) {          // 使用寄存器中的值
+    // 循环体
+}
+// 之后寄存器可能被重用
+
+
+"寄存器缓存"的真正含义，不是物理存储，而是访问路径优化：
+没有优化的情况（volatile保证）：
+循环开始 → 读取内存 → CPU缓存 → 寄存器 → 判断 → 循环体
+      ↑                                   │
+      └───────────────────────────────────┘
+
+优化后的情况：
+      ┌───────────────────────────────────┐
+      ↓                                   │
+循环开始 → 寄存器(已有值) → 判断 → 循环体
+      ↑                                   │
+      └───────────────────────────────────┘
+      
+关键：优化后完全绕过了"读取内存"这个步骤！
+
+
+
 PHP默认是单线程模型，所以没有这个问题。
+
 
 1.4 synchronized 修饰符
 synchronized 关键字声明的方法同一时间只能被一个线程访问。
@@ -441,6 +481,42 @@ Spring Boot 主要特性：
 Actuator：提供生产级监控功能
 
 6. 探索 Spring Cloud 构建微服务
+6.1 Spring Cloud vs Spring Boot
+Spring Boot：简化单个应用的开发
+Spring Cloud：构建分布式系统/微服务架构，关注如何连接和管理多个Spring Boot应用
+
+1、 **先掌握 Spring Boot**（必须）
+   - 自动配置原理
+   - Starter机制
+   - REST API开发
+   - 数据访问（JPA/MyBatis）
+   - 事务管理
+
+2、 **再学习 Spring Cloud**（需要时）
+   - 先理解微服务概念
+   - 从服务注册发现开始（Eureka/Nacos）
+   - 学习服务间通信（Feign/RestTemplate）
+   - 掌握配置中心（Config/Nacos）
+   - 了解熔断限流（Hystrix/Sentinel）
+
+
+// 问：我应该直接学Spring Cloud吗？
+// 答：不建议！应该：
+
+// 阶段1：掌握单体应用开发（Spring Boot足够）
+@SpringBootApplication
+public class MonolithApplication {
+    // 用户管理、订单管理都在一个应用里
+    // 使用Spring MVC + Spring Data + Spring Security
+}
+
+// 阶段2：学习微服务拆分（需要Spring Cloud）
+// 把上面的单体拆分为：
+// 1. user-service（用户服务）
+// 2. order-service（订单服务）
+// 3. product-service（商品服务）
+// 4. 用Spring Cloud把它们连接起来
+
 
 -------------------------------
 -------------------------------
@@ -926,6 +1002,44 @@ Q7：如何优化慢查询？
 
 Q1：MySQL默认隔离级别是什么？解决了哪些问题？
 MySQL InnoDB的默认隔离级别是 REPEATABLE READ（可重复读）。它通过MVCC解决了脏读和不可重复读问题。对于幻读，InnoDB在REPEATABLE READ下通过Next-Key Lock（记录锁+间隙锁）在加锁查询（如SELECT ... FOR UPDATE）时可以避免，但普通的快照读仍可能遇到幻读。所以MySQL的REPEATABLE READ实际上比SQL标准的要求更严格。
+
+
+为了解决幻读，MySQL在REPEATABLE READ下使用了Next-Key Locking机制。
+1）Next-Key Lock = Record Lock + Gap Lock：
+-- 假设users表数据：
+-- id: 1, 3, 5, 7, 9
+-- age: 20, 25, 30, 35, 40
+
+-- 事务1
+START TRANSACTION;
+SELECT * FROM users WHERE age = 30 FOR UPDATE;
+
+-- Next-Key Lock锁定的范围：
+-- 1. Record Lock：锁住age=30这行
+-- 2. Gap Lock：锁住(25, 30)和(30, 35)这两个间隙
+-- 3. 其他事务不能在(25, 35)范围内插入数据
+
+-- 事务2尝试插入会被阻塞
+START TRANSACTION;
+INSERT INTO users (name, age) VALUES ('test', 28);  -- 阻塞，因为28在(25,30)间隙
+INSERT INTO users (name, age) VALUES ('test', 32);  -- 阻塞，因为32在(30,35)间隙
+
+2）不同查询条件的加锁策略
+-- 示例数据：id (1,3,5,7), age (18,22,25,30)
+
+-- 1. 等值查询（age = 25）
+SELECT * FROM users WHERE age = 25 FOR UPDATE;
+-- 加锁：record lock (age=25) + gap lock (22,25) + gap lock (25,30)
+
+-- 2. 范围查询（age > 20）
+SELECT * FROM users WHERE age > 20 FOR UPDATE;
+-- 加锁：所有age>20的记录锁 + 所有相关间隙锁
+-- 阻止在(20, ∞)范围内插入
+
+-- 3. 无匹配记录的查询（age = 23）
+SELECT * FROM users WHERE age = 23 FOR UPDATE;
+-- 加锁：gap lock (22,25) 
+-- 虽然没找到记录，但锁定了这个间隙
 
 Q2：如何选择隔离级别？
 读已提交（READ COMMITTED）：大多数Web应用的选择。平衡了性能和数据一致性，避免脏读，接受不可重复读和幻读。Oracle默认，推荐金融外的多数场景。
