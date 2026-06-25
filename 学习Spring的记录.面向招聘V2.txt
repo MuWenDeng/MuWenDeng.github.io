@@ -541,4 +541,129 @@ D. 提供连接复用，提升响应速度
 
 6.2 多数据源配置。
 
+6.3 批量导入方案
+方案一：小批量（< 1000条）—— MyBatis-Plus 自带
+@Service
+public class UserService extends ServiceImpl<UserMapper, User> {
+
+    // 直接调用父类的 saveBatch，MyBatis-Plus 会自动拼接成多值 INSERT
+    public boolean batchImport(List<User> users) {
+        // saveBatch 底层默认分 1000 条一批
+        return this.saveBatch(users);
+    }
+}
+
+生成的 SQL：
+INSERT INTO users (name, age, email) VALUES 
+('张三', 25, 'zhangsan@test.com'),
+('李四', 30, 'lisi@test.com'),
+('王五', 28, 'wangwu@test.com');
+
+优点：零配置，一行代码搞定
+缺点：数据量过万时会变慢，因为每批都要重新解析 SQL
+
+方案二：中批量（1000 ~ 10万条）—— JDBC 批量提交 + rewriteBatchedStatements
+这是生产环境最常用的方案，也是大厂面试必问的点。
+
+Step 1：JDBC URL 加一个关键参数
+yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/test_db?
+         useSSL=false&
+         serverTimezone=GMT%2B8&
+         rewriteBatchedStatements=true    # ← 这个参数是灵魂！
+    username: root
+    password: 123456
+rewriteBatchedStatements=true 的作用：
+
+没有这个参数：JDBC 的 executeBatch() 会拆成多条单条 INSERT 发送，性能差
+
+加上这个参数：MySQL JDBC 驱动会把多条 INSERT 重写成一条多值 INSERT，性能提升 10~20 倍
+
+Step 2：使用 SqlSession 执行批量提交
+java
+@Service
+@Slf4j
+public class UserBatchService {
+
+    @Autowired
+    private SqlSessionFactory sqlSessionFactory;
+
+    public void batchInsert(List<User> users) {
+        // 每批 2000 条，避免单条 SQL 太长
+        int batchSize = 2000;
+        int total = users.size();
+
+        try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
+            UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+
+            for (int i = 0; i < total; i++) {
+                mapper.insert(users.get(i));  // 这里不会立即执行，而是攒在批里
+                
+                if (i % batchSize == batchSize - 1 || i == total - 1) {
+                    sqlSession.flushStatements();  // 每 2000 条发送一次
+                    sqlSession.commit();            // 提交事务
+                    log.info("已插入 {} 条", i + 1);
+                }
+            }
+        }
+    }
+}
+Step 3：Mapper 中只需要普通的 insert
+java
+@Mapper
+public interface UserMapper extends BaseMapper<User> {
+    // 普通的单条插入
+    @Insert("INSERT INTO users (name, age, email) VALUES (#{name}, #{age}, #{email})")
+    int insert(User user);
+}
+实际执行的 SQL（rewriteBatchedStatements 生效后）
+text
+-- 你代码里写的是 2000 次单条 INSERT
+-- MySQL 驱动自动重写成：
+INSERT INTO users (name, age, email) VALUES 
+('张三', 25, '...'), ('李四', 30, '...'), ... (2000条)
+
+方案三：超大数量（> 10万条）—— LOAD DATA LOCAL INFILE
+这是最快的方式，直接让 MySQL 从文件读取数据，绕过 JDBC 的网络开销。
+
+Step 1：把数据写成 CSV 文件
+java
+public void batchInsertWithFile(List<User> users) throws IOException {
+    // 1. 写入临时 CSV 文件
+    String csvPath = "/tmp/users_import.csv";
+    try (FileWriter fw = new FileWriter(csvPath);
+         PrintWriter pw = new PrintWriter(fw)) {
+        for (User user : users) {
+            pw.printf("%s,%d,%s%n", 
+                user.getName(), user.getAge(), user.getEmail());
+        }
+    }
+
+    // 2. 执行 LOAD DATA
+    try (Connection conn = dataSource.getConnection();
+         Statement stmt = conn.createStatement()) {
+        String sql = String.format(
+            "LOAD DATA LOCAL INFILE '%s' " +
+            "INTO TABLE users " +
+            "FIELDS TERMINATED BY ',' " +
+            "LINES TERMINATED BY '\\n' " +
+            "(name, age, email)",
+            csvPath
+        );
+        int rows = stmt.executeUpdate(sql);
+        log.info("导入完成，共 {} 条", rows);
+    }
+}
+性能对比：10万条数据，方案二约 5 秒，方案三约 1.5 秒。
+
+注意：MySQL 需要开启 local_infile：
+
+sql
+SET GLOBAL local_infile = 1;
+
+
+
+
 
