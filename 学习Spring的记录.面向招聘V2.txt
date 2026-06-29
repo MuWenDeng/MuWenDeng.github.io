@@ -664,6 +664,117 @@ sql
 SET GLOBAL local_infile = 1;
 
 
+7. Redis
+问题	定义	解决方案
+缓存穿透	查询不存在的数据，绕过缓存直达 DB	缓存空值 + 布隆过滤器
+缓存雪崩	大量缓存同时过期，流量直击 DB	过期时间加随机值
+缓存击穿	热点 key 过期，大量请求同时击穿缓存	互斥锁（分布式锁）
+
+8. RabbitMQ
+8.1 RabbitMQ 防消息丢失
+第一阶段：生产端（Producer）—— 确保消息“发出去了”
+这一阶段最容易丢消息，比如网络抖动、或 RabbitMQ 服务挂了导致写入失败。
+
+解决办法：开启 Confirm 确认机制 + 重试
+
+核心思想：Broker（RabbitMQ）收到消息后，必须给我回一个“ACK”确认包，否则我就重发。
+
+java
+// 1. 在 application.yml 中开启 Confirm
+spring:
+  rabbitmq:
+    publisher-confirm-type: correlated  # 开启 Confirm 机制
+    publisher-returns: true             # 开启 Return 机制（路由失败回调）
+
+// 2. 编写发送代码（带回调监听）
+@Service
+public class MessageProducer {
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    public void send(String exchange, String routingKey, Object message) {
+        // 设置 CorrelationData（包含唯一ID，用于追踪）
+        CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
+
+        // 发送消息，并设置 ConfirmCallback
+        rabbitTemplate.confirmCallback = (correlation, ack, cause) -> {
+            if (!ack) {
+                // 失败！记录日志，写入本地数据库或文件，定时任务补发
+                System.err.println("消息发送失败，correlationId: " + correlation + "，原因：" + cause);
+                // 在这里触发你的重试机制（存库 + 定时任务扫描重发）
+            } else {
+                System.out.println("消息成功到达 Broker");
+            }
+        };
+
+        // 发送消息
+        rabbitTemplate.convertAndSend(exchange, routingKey, message, correlationData);
+    }
+}
+终极保障： 生产环境必须配合 本地消息表。如果 Confirm 返回失败，直接把这笔消息 Insert 到本地 MySQL 表中，由定时任务（每分钟扫一次）重新发送，直到状态变为“已发送”。
+
+第二阶段：MQ 服务端（Broker）—— 确保消息“不丢在内存里”
+RabbitMQ 默认收到消息是存内存的，如果此时服务器突然宕机，消息就丢了。
+
+解决办法：开启持久化（Durable） + 镜像队列（Mirror）
+
+交换机、队列、消息都必须持久化：
+
+声明队列时设置 durable=true。
+
+发送消息时设置 MessageProperties.PERSISTENT_TEXT_PLAIN（Spring Boot 默认是持久化，但建议显式设置）。
+
+（关键）开启镜像队列：
+
+单节点 RabbitMQ 即使开启了持久化，数据写入硬盘有延迟（默认每秒刷盘几次），断电瞬间可能来不及刷盘。
+
+生产方案：搭建集群，并配置 镜像队列（Mirror Queue）。即消息写入 Master 节点时，会自动同步到 1-2 个 Slave 节点。即使 Master 挂了，Slave 秒变 Master，消息完整无缺。
+
+第三阶段：消费端（Consumer）—— 确保消息“处理完再确认”
+这是最容易忽略的坑：消费者拿到消息，还没处理完业务逻辑，就自动回复 ACK 了。此时消费者突然宕机，消息已从队列删除，永久丢失。
+
+解决办法：关闭自动 ACK，改为手动签收（Manual Ack）
+
+java
+// 1. 配置 application.yml
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: manual  # 关键！关闭自动，改手动
+
+// 2. 消费代码
+@Component
+public class MessageConsumer {
+
+    @RabbitListener(queues = "order_queue")
+    public void handleMessage(Message message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
+        try {
+            // 1. 处理业务逻辑（操作数据库、调用第三方接口等）
+            System.out.println("处理消息: " + new String(message.getBody()));
+            
+            // 2. 业务处理成功！手动发送 ACK
+            channel.basicAck(tag, false); 
+            System.out.println("消息处理成功，已确认");
+
+        } catch (Exception e) {
+            // 3. 处理失败！根据情况决定是否重试
+            try {
+                // 场景A：业务异常，重试，重新放回队列（根据业务决定是否延迟重试）
+                // requeue=true 重新入队，会一直重试，可能造成死循环
+                // 建议：重试3次后，打入死信队列（DLX），人工介入处理
+                channel.basicNack(tag, false, false); // false表示不重新入队，打入死信
+                System.err.println("消息异常，已转入死信队列");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+}
+生产避坑：basicNack 的第三个参数 requeue 要谨慎设置。生产环境通常设为 false，配合 死信队列（DLX） 专门存放处理失败的消息，人工补偿处理。如果设为 true，异常消息会无限循环，堵塞整个队列。
+
+
 
 
 
