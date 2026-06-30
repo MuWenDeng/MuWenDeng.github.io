@@ -1837,5 +1837,50 @@ public class ProductController {
     }
 }
 
+8. 多线程
+我设计了一个模拟场景：
 
+1）使用 ConcurrentHashMap 作为订单缓存。
+
+2）使用 ReentrantLock 保护库存扣减。
+
+3）使用 CompletableFuture 并行调用用户和商品服务。
+
+4）使用自定义线程池 执行批量处理任务。
+@Configuration
+public class ThreadPoolConfig {
+
+    @Bean("customExecutor")
+    public ExecutorService customExecutor() {
+        return new ThreadPoolExecutor(
+            10,                           // 核心线程数，核心线程数 = CPU核数 * 2”这个设置，它主要来源于 Java 并发编程一个通用经验公式
+/*
+设置线程数，首先得看你的任务主要是“烧脑”还是“跑腿”：
+
+任务类型	特点	最佳核心线程数设置	原因
+计算密集型	大量计算，CPU 始终处于高负载状态，几乎没有等待。	CPU核数 + 1	过多的线程会导致频繁的上下文切换，反而增加开销，降低性能。
+I/O 密集型	业务涉及大量的网络调用、数据库读写、文件操作，线程大部分时间在等待响应。	CPU核数 * 2 或更大	在等待 I/O 时，CPU 是空闲的。设置更多线程可以充分利用这段空闲时间，去处理其他任务，从而提高整体的吞吐量。
+*/
+            50,                           // 最大线程数
+            60L,                          // 空闲存活时间
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(1000), // 工作队列
+            new ThreadFactoryBuilder()       // 给线程起个名字，方便排查
+                .setNameFormat("custom-pool-%d")
+                .build(),
+            new ThreadPoolExecutor.CallerRunsPolicy() // 拒绝策略
+        );
+    }
+}
+
+拒绝策略怎么选？
+策略	行为	适用场景
+AbortPolicy（默认）	直接抛出 RejectedExecutionException	关键业务，必须明确处理异常
+CallerRunsPolicy	让调用者线程（如 Tomcat 线程）自己执行任务	削峰填谷，宁可慢一点也不要丢任务
+DiscardPolicy	直接丢弃新任务	非核心业务，丢了无所谓
+DiscardOldestPolicy	丢弃队列中最老的任务，执行新任务	追求最新数据，允许丢弃旧任务
+
+5）使用 CountDownLatch 等待所有并行任务完成。
+
+6）使用 ThreadLocal 在日志中打印当前线程的请求ID。
 
