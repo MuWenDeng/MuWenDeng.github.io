@@ -1864,7 +1864,7 @@ I/O 密集型	业务涉及大量的网络调用、数据库读写、文件操作
             50,                           // 最大线程数
             60L,                          // 空闲存活时间
             TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(1000), // 工作队列
+            new LinkedBlockingQueue<>(1000), // 工作队列。LinkedBlockingQueue（最常用，默认首选），核心特征：基于链表的有界/无界队列，默认容量是 Integer.MAX_VALUE（无界）。生产环境必须指定容量！！！new LinkedBlockingQueue<>(1000)  // ✅ 正确做法
             new ThreadFactoryBuilder()       // 给线程起个名字，方便排查
                 .setNameFormat("custom-pool-%d")
                 .build(),
