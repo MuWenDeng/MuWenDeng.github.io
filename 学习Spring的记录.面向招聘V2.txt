@@ -942,4 +942,104 @@ public class DistributedScheduledTasks {
 强大的执行能力：拥有任务分片、失败重试、路由策略（如轮询、故障转移）、任务依赖等生产级特性。
 
 
+9. 最常见的 Spring Web API 内存泄漏场景
+一、ThreadLocal 未清理（Spring 框架级经典）
+
+真实代码（出问题版本）
+```java
+@RestController
+public class UserController {
+    // 自定义 ThreadLocal 保存请求追踪 ID
+    private static final ThreadLocal<String> traceIdHolder = new ThreadLocal<>();
+    
+    @GetMapping("/api/user")
+    public User getUser() {
+        String traceId = UUID.randomUUID().toString();
+        traceIdHolder.set(traceId);          // 设置
+        // ... 业务逻辑 ...
+        return userService.getUser();
+        // ❌ 没有调用 traceIdHolder.remove()
+    }
+}
+```
+
+后果
+随着请求量增大，Tomcat 线程池中每个线程都会累积一个 `traceId` 字符串引用，这些字符串永远不会被 GC 回收。内存持续增长，最终 OOM。
+
+解决方案
+```java
+try {
+    traceIdHolder.set(traceId);
+    // 业务逻辑
+} finally {
+    traceIdHolder.remove();   // ✅ 确保清理
+}
+```
+
+二、Stream / 大文件 / 图片处理未释放资源
+
+场景
+API 需要导出 Excel、处理图片、或读取大文件流。**流没有正确关闭**，导致堆外内存（Direct Memory）或文件句柄泄漏。堆外内存泄漏不会显示在 Heap Dump 中，非常隐蔽。
+
+真实代码（出问题版本）
+```java
+@GetMapping("/api/export")
+public ResponseEntity<byte[]> exportData() {
+    FileInputStream fis = new FileInputStream("/tmp/large.xlsx");
+    byte[] data = new byte[fis.available()];  // ❌ 直接读全部到内存
+    fis.read(data);
+    // ❌ fis 没有 close
+    return ResponseEntity.ok(data);
+}
+```
+
+后果
+- 如果文件很大（100MB），每次请求都会在堆里创建 100MB 的 `byte[]`，同时 `FileInputStream` 持有的文件句柄不释放，最终 OOM 或 `Too many open files`。
+- 如果使用了 Netty / Tomcat NIO 的 DirectBuffer，还会耗尽堆外内存（`java.lang.OutOfMemoryError: Direct buffer memory`）。
+
+解决方案
+```java
+// 方案1：使用 try-with-resources
+try (FileInputStream fis = new FileInputStream("/tmp/large.xlsx");
+     ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+    byte[] buffer = new byte[8192];
+    int len;
+    while ((len = fis.read(buffer)) != -1) {
+        baos.write(buffer, 0, len);
+    }
+    return ResponseEntity.ok(baos.toByteArray());
+}
+
+// 方案2：流式响应（不把整个文件加载到内存）
+@GetMapping("/api/export-stream")
+public ResponseEntity<StreamingResponseBody> exportStream() {
+    StreamingResponseBody body = outputStream -> {
+        try (FileInputStream fis = new FileInputStream("/tmp/large.xlsx")) {
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = fis.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, len);
+            }
+        }
+    };
+    return ResponseEntity.ok(body);
+}
+```
+
+最后一句忠告
+
+**预防比排障更重要**。在生产环境，一定要开启：
+
+```bash
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/path/to/dump/
+-XX:+PrintGCDetails
+-XX:+PrintGCDateStamps
+-Xloggc:/path/to/gc.log
+```
+
+这样一旦 OOM，自动生成 Heap Dump 和 GC 日志，你手上有 `jstack`、`jmap`、`jstat` 这些工具，就能快速定位问题源头。
+
+如果你碰到过具体的 OOM 场景（比如某个接口调用后内存暴涨），可以把代码片段或 GC 日志发来，我帮你做一次现场分析。
+
 
