@@ -416,3 +416,23 @@ curl http://localhost:8080/actuator/health
 ---
 
 现在你已经有了一套完整的非 Docker 部署方案。你是想先本地试一遍，还是想深入了解 **Nginx 反向代理配置** 或 **日志切割（logrotate）** 的配置？😊
+
+## 更规范的日志方案：在 application.yml 中配置日志
+```
+logging:
+  file:
+    path: /app/logs
+    name: /app/logs/app.log
+  logback:
+    rollingpolicy:
+      file-name-pattern: /app/logs/app.%d{yyyy-MM-dd}.%i.log
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 10GB
+```
+
+这样日志由 Logback 管理切割，不受 Shell 重定向影响。启动时只需用 >> 捕获控制台输出即可：
+```
+nohup java -jar my-api.jar >> /app/logs/console.log 2>&1 &
+```
+
