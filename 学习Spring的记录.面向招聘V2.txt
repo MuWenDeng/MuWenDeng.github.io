@@ -775,6 +775,171 @@ public class MessageConsumer {
 生产避坑：basicNack 的第三个参数 requeue 要谨慎设置。生产环境通常设为 false，配合 死信队列（DLX） 专门存放处理失败的消息，人工补偿处理。如果设为 true，异常消息会无限循环，堵塞整个队列。
 
 
+8. 定时任务
+
+方式一：@Scheduled 注解（最常用）
+2.1 开启定时任务
+在启动类或配置类上加 @EnableScheduling：
+
+java
+@SpringBootApplication
+@EnableScheduling  // ← 开启定时任务
+public class DemoApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
+    }
+}
+2.2 基本用法
+java
+@Component
+@Slf4j
+public class ScheduledTasks {
+
+    // 1. 固定延迟：上次执行完后延迟 5 秒再执行
+    @Scheduled(fixedDelay = 5000)
+    public void taskWithFixedDelay() {
+        log.info("固定延迟任务执行: {}", LocalDateTime.now());
+    }
+
+    // 2. 固定频率：每 10 秒执行一次（不关心上次是否完成）
+    @Scheduled(fixedRate = 10000)
+    public void taskWithFixedRate() {
+        log.info("固定频率任务执行: {}", LocalDateTime.now());
+    }
+
+    // 3. Cron 表达式：每天凌晨 2 点执行
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void dailyReportTask() {
+        log.info("每日报表生成开始...");
+        generateDailyReport();
+    }
+
+    // 4. Cron 表达式：每小时执行一次
+    @Scheduled(cron = "0 0 * * * ?")
+    public void hourlyTask() {
+        log.info("每小时任务执行");
+    }
+
+    // 5. 动态参数：从配置文件读取 cron 表达式
+    @Scheduled(cron = "${schedule.report.cron:0 0 2 * * ?}")
+    public void configurableTask() {
+        log.info("可配置的定时任务执行");
+    }
+}
+2.3 Cron 表达式速查
+text
+秒 分 时 日 月 周
+*  *  *  *  *  *
+│  │  │  │  │  │
+│  │  │  │  │  └── 周（0-7，0和7都代表周日）
+│  │  │  │  └──── 月（1-12）
+│  │  │  └─────── 日（1-31）
+│  │  └────────── 时（0-23）
+│  └───────────── 分（0-59）
+└──────────────── 秒（0-59）
+表达式	含义
+0 0 2 * * ?	每天凌晨 2 点
+0 0/5 * * * ?	每 5 分钟
+0 0 9-18 * * ?	每天 9 点到 18 点，每小时执行
+0 0 9,13,17 * * ?	每天 9 点、13 点、17 点
+0 30 8 * * MON	每周一上午 8:30
+0 0 0 1 * ?	每月 1 号凌晨 0 点
+0 0 0 L * ?	每月最后一天凌晨 0 点
+
+方式二：异步定时任务（@Async + @Scheduled）
+默认情况下，所有 @Scheduled 方法是同一个线程串行执行的。如果一个任务执行时间过长，会阻塞后续任务。
+
+配置异步调度：
+
+java
+@Configuration
+@EnableAsync  // 开启异步
+public class AsyncScheduledConfig {
+
+    @Bean(name = "taskExecutor")
+    public Executor taskExecutor() {
+        return new ThreadPoolExecutor(
+            5, 20, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(100),
+            new ThreadFactoryBuilder()
+                .setNameFormat("scheduled-pool-%d")
+                .build()
+        );
+    }
+}
+使用异步定时任务：
+
+java
+@Component
+@Slf4j
+public class AsyncScheduledTasks {
+
+    @Async("taskExecutor")  // ← 使用指定线程池异步执行
+    @Scheduled(fixedRate = 5000)
+    public void asyncTask() {
+        log.info("异步定时任务执行，线程: {}", Thread.currentThread().getName());
+        // 即使这个任务执行 10 秒，也不会阻塞其他任务
+    }
+}
+
+方式三：分布式定时任务（ShedLock）
+问题：微服务多实例部署时，同一个定时任务会在多个实例上重复执行。
+
+解决方案：使用 ShedLock，通过 Redis 或数据库实现分布式锁。
+
+5.1 添加依赖
+xml
+<dependency>
+    <groupId>net.javacrumbs.shedlock</groupId>
+    <artifactId>shedlock-spring</artifactId>
+    <version>5.10.0</version>
+</dependency>
+<dependency>
+    <groupId>net.javacrumbs.shedlock</groupId>
+    <artifactId>shedlock-provider-redis-spring</artifactId>
+    <version>5.10.0</version>
+</dependency>
+5.2 配置 ShedLock
+java
+@Configuration
+@EnableScheduling
+@EnableSchedulerLock(defaultLockAtMostFor = "PT30S")  // 默认锁持有时间
+public class ShedLockConfig {
+
+    @Bean
+    public LockProvider lockProvider(RedisConnectionFactory connectionFactory) {
+        return new RedisLockProvider(connectionFactory);
+    }
+}
+5.3 使用 @SchedulerLock 注解
+java
+@Component
+@Slf4j
+public class DistributedScheduledTasks {
+
+    @Scheduled(cron = "0 0 2 * * ?")
+    @SchedulerLock(
+        name = "dailyReportTask",
+        lockAtLeastFor = "PT5M",   // 锁至少持有 5 分钟
+        lockAtMostFor = "PT10M"    // 锁最多持有 10 分钟
+    )
+    public void dailyReportTask() {
+        log.info("分布式锁保护的任务执行，只有持有锁的实例执行");
+        generateDailyReport();
+    }
+}
+原理：只有一个实例能获得 Redis 锁并执行任务，其他实例跳过。
+
+方式四：分布式调度平台 (XXL-JOB)（微服务与复杂任务的首选）
+在微服务或中大型项目中，XXL-JOB 是目前国内生产环境最主流的分布式任务调度平台之一。它解决了 @Scheduled 在多实例下的所有痛点。
+
+核心优势：
+
+统一管理：提供Web可视化界面，可集中管理所有任务，动态配置Cron表达式，无需重启应用。
+
+高可用：支持调度中心集群部署，避免单点故障。
+
+强大的执行能力：拥有任务分片、失败重试、路由策略（如轮询、故障转移）、任务依赖等生产级特性。
 
 
 
