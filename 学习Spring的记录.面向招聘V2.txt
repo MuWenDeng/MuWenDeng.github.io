@@ -1043,3 +1043,88 @@ public ResponseEntity<StreamingResponseBody> exportStream() {
 如果你碰到过具体的 OOM 场景（比如某个接口调用后内存暴涨），可以把代码片段或 GC 日志发来，我帮你做一次现场分析。
 
 
+10. @Qualifier
+当你有多个同类型的 Bean 时，@Qualifier 能帮你精确指定你要注入的是哪一个
+
+在 Spring 中，@Autowired 默认是按类型（byType）进行注入的。当一个接口有多个实现类，或者一个类有多个 Bean 实例时，Spring 就不知道应该注入哪一个，会抛出 NoUniqueBeanDefinitionException 异常。
+
+示例场景
+假设你有一个 PaymentService 接口，有两个实现：AliPayService 和 WeChatPayService。
+
+java
+public interface PaymentService {
+    void pay();
+}
+
+@Service
+public class AliPayService implements PaymentService {
+    @Override
+    public void pay() { System.out.println("支付宝支付"); }
+}
+
+@Service
+public class WeChatPayService implements PaymentService {
+    @Override
+    public void pay() { System.out.println("微信支付"); }
+}
+当你尝试在 OrderService 中注入 PaymentService 时，就会出现歧义：
+
+java
+@Service
+public class OrderService {
+    // 会报错：Field paymentService 是必须的，但找到了2个候选Bean
+    @Autowired
+    private PaymentService paymentService; 
+}
+
+
+使用 @Qualifier 精确指定
+@Qualifier 注解通过指定 Bean 的名称 来明确注入哪一个。默认情况下，Bean 的名称是类名首字母小写。
+
+方式一：在字段注入上使用
+java
+@Service
+public class OrderService {
+    @Autowired
+    @Qualifier("aliPayService")  // 明确指定注入 AliPayService
+    private PaymentService paymentService;
+}
+
+方式二：在构造器注入上使用（推荐）
+java
+@Service
+public class OrderService {
+    private final PaymentService paymentService;
+
+    public OrderService(@Qualifier("aliPayService") PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+}
+
+方式三：自定义 @Qualifier 注解
+创建自定义注解
+java
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Qualifier  // 标记为 Qualifier
+public @interface Alipay {
+}
+
+在实现类上使用
+java
+@Service
+@Alipay  // 给这个 Bean 打上 Alipay 标签
+public class AliPayService implements PaymentService {
+    // ...
+}
+
+在注入点使用
+java
+@Service
+public class OrderService {
+    @Autowired
+    @Alipay  // 使用自定义注解注入
+    private PaymentService paymentService;
+}
+
+
