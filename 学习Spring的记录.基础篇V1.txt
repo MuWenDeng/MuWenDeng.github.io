@@ -60,6 +60,47 @@ stop() 在另一个线程里调用
 volatile通过内存屏障阻止这种优化，保证每次从主内存读取。
 问题不只是寄存器，还包括CPU缓存一致性、写缓冲区等。
 
+
+从字节码理解 count++ 的三次独立操作
+在 Java 中，count++ 看起来像一行代码，但编译成字节码后，它是三个独立的操作：
+1）读（Read）：从主内存中获取 count 的当前值到工作内存。
+2）改（Modify）：在工作内存中将值加 1。
+3）写（Write）：将新的值从工作内存写回主内存。
+这三次操作之间，为线程切换留下了间隙。
+
+多线程环境下 volatile 变量 count++ 操作丢失更新问题
+1）主内存中 count 初始值为 0。
+2）线程 A 从主内存读取 count 的值，读到的值为 0，并将其存入线程 A 的工作内存。
+3）线程 B 也从主内存读取 count 的值，读到的值为 0，并将其存入线程 B 的工作内存。
+4）线程 A 在自己的工作内存中执行计算：0 + 1 = 1。
+5）线程 B 也在自己的工作内存中执行相同的计算：0 + 1 = 1。
+6）线程 A 将计算结果 1 写回主内存，主内存中的 count 被更新为 1（volatile 保证了立即可见性）。
+7）随后，线程 B 也将自己的计算结果 1 写回主内存，主内存中的 count 被覆盖为 1。
+结果说明： 虽然执行了两次自增操作，但最终结果仅为 1，丢失了一次更新。这说明了 volatile 虽然能保证可见性，但无法保证复合操作（如 count++）的原子性。
+
+
+要解决count++这个问题，就必须把这三步变成一个原子操作。在 Java 中，有两种标准做法：
+
+1. 使用 synchronized（悲观锁）
+public class Counter {
+    private volatile int count = 0;
+    public synchronized void increment() {
+        count++; // 现在整个方法被锁保护，其他线程无法进入
+    }
+}
+
+2. 使用 AtomicInteger（乐观锁 / CAS）
+public class Counter {
+    private AtomicInteger count = new AtomicInteger(0);
+    public void increment() {
+        count.incrementAndGet(); // 基于CAS的无锁原子操作
+    }
+}
+
+AtomicInteger 利用硬件支持的 CAS（比较并交换） 指令，在硬件层面保证了“读-改-写”是一个原子操作。如果在修改时发现值被改过，它会自动重试，从而保证最终一致性。
+
+
+
 计算机存储层次结构：
 CPU性能：寄存器 > L1缓存 > L2缓存 > L3缓存 > 主内存 > 磁盘
 访问速度：0.5ns   > 1ns   > 3ns   > 10ns   > 100ns  > 10ms
